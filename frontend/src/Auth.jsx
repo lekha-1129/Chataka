@@ -103,8 +103,8 @@ function Auth({ onLogin }) {
     <div className="auth-page">
       <div className="auth-left">
         <div className="auth-brand">
-          <div className="auth-logo">C</div>
-          <span>CHATaka</span>
+          <div className="auth-logo">+</div>
+          <span>ChatakA Health</span>
         </div>
 
         <div className="auth-content">
@@ -113,7 +113,7 @@ function Auth({ onLogin }) {
           </div>
 
           <h1>
-            Smart Healthcare.
+            Better Care,
             <br />
             <span>Less Waiting.</span>
           </h1>
@@ -148,7 +148,7 @@ function Auth({ onLogin }) {
         <div className="auth-card">
           <div className="auth-heading">
             <div className="auth-mini">
-              CHATaka PORTAL
+              ChatakA HEALTH PORTAL
             </div>
 
             <h2>
@@ -289,7 +289,7 @@ function Auth({ onLogin }) {
           </div>
 
           <div className="security-note">
-            🔒 Secure role-based access • CHATaka prototype
+            🔒 Secure role-based access • ChatakA prototype
           </div>
         </div>
       </div>

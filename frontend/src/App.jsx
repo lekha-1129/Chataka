@@ -89,15 +89,15 @@ function Layout({
       <aside className="sidebar">
 
         <div className="sidebar-brand">
-          <div className="auth-logo">C</div>
+          <div className="auth-logo">+</div>
 
           <div>
             <div className="sidebar-brand-name">
-              CHATaka
+              ChatakA Health
             </div>
 
             <div className="sidebar-brand-sub">
-              SMART HOSPITAL
+              HOSPITAL MANAGEMENT
             </div>
           </div>
         </div>
@@ -147,7 +147,7 @@ function Layout({
           <div>
 
             <div className="dashboard-eyebrow">
-              CHATaka / {user.role}
+              ChatakA / {user.role}
             </div>
 
             <h1>{title}</h1>
@@ -1668,7 +1668,7 @@ function AdminDashboard({ user, onLogout }) {
       <div className="dash-card feature-card">
 
         <div className="card-label">
-          CHATaka PLATFORM
+          ChatakA PLATFORM
         </div>
 
         <h3>
