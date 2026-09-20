@@ -1,4 +1,4 @@
-# CHATaka – Role-Based AI Hospital Queue Prototype
+# ChatakA – Role-Based AI Hospital Queue Prototype
 
 A ready-to-run prototype for CHATaka with:
 - React.js frontend
