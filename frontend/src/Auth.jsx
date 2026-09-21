@@ -104,7 +104,7 @@ function Auth({ onLogin }) {
       <div className="auth-left">
         <div className="auth-brand">
           <div className="auth-logo">+</div>
-          <span>ChatakA Health</span>
+          <span>ChatakA</span>
         </div>
 
         <div className="auth-content">
@@ -148,7 +148,10 @@ function Auth({ onLogin }) {
         <div className="auth-card">
           <div className="auth-heading">
             <div className="auth-mini">
-              ChatakA HEALTH PORTAL
+              ChatakA
+            </div>
+            <div className="auth-mini" style={{fontWeight:400, letterSpacing:0, textTransform:"none", fontSize:"12px", color:"#6b7a8d", marginTop:"2px"}}>
+              Smart Queue Management System
             </div>
 
             <h2>
@@ -289,7 +292,7 @@ function Auth({ onLogin }) {
           </div>
 
           <div className="security-note">
-            🔒 Secure role-based access • ChatakA prototype
+            🔒 Secure role-based access • ChatakA — Smart Queue Management System
           </div>
         </div>
       </div>

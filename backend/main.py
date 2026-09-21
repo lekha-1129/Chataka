@@ -25,6 +25,9 @@ patient_columns = {column["name"] for column in inspector.get_columns("patients"
 if "user_id" not in patient_columns:
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE patients ADD COLUMN user_id INTEGER"))
+if "disease" not in patient_columns:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE patients ADD COLUMN disease TEXT"))
 
 get_model()
 
@@ -240,6 +243,7 @@ def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
         age=data.age,
         department=data.department,
         phone=data.phone,
+        disease=data.disease,
     )
     db.add(patient)
     db.commit()
@@ -358,6 +362,26 @@ async def complete_token(token_number: str, db: Session = Depends(get_db)):
     await broadcast_queue(db, token.department)
 
     return {"message": "Consultation completed", "token_number": token.token_number}
+
+
+@app.get("/admin/patients")
+def admin_list_patients(db: Session = Depends(get_db)):
+    patients = db.query(Patient).order_by(Patient.id.desc()).all()
+    result = []
+    for p in patients:
+        token = db.query(Token).filter(Token.patient_id == p.id).order_by(Token.id.desc()).first()
+        result.append({
+            "id": p.id,
+            "name": p.name,
+            "age": p.age,
+            "department": p.department,
+            "phone": p.phone or "",
+            "disease": p.disease or "",
+            "token_number": token.token_number if token else "—",
+            "status": token.status if token else "—",
+            "priority": token.priority if token else "—",
+        })
+    return {"patients": result}
 
 
 @app.get("/dashboard")

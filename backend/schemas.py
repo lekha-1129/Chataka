@@ -20,6 +20,7 @@ class PatientCreate(BaseModel):
     age: int = Field(ge=0, le=120)
     department: str
     phone: str | None = None
+    disease: str | None = None
     priority: str = "NORMAL"
     user_id: int | None = None
 
@@ -31,6 +32,7 @@ class PatientResponse(BaseModel):
     age: int
     department: str
     phone: str | None = None
+    disease: str | None = None
 
     class Config:
         from_attributes = True

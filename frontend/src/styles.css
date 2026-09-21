@@ -468,6 +468,33 @@ button {
   background: #fff;
 }
 
+.topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.breadcrumb-role {
+  color: #0a6ebd;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.breadcrumb-sep {
+  color: #9ca3af;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.breadcrumb-page {
+  color: #6b7a8d;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
 .dashboard-topbar h1 {
   margin: 6px 0 4px;
   font-size: 24px;
@@ -854,6 +881,26 @@ button {
   background: #fee2e2;
 }
 
+.dark-badge.waiting {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.dark-badge.called {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.dark-badge.completed {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+.dark-badge.— {
+  color: #9ca3af;
+  background: #f9fafb;
+}
+
 .table-action {
   border: 1.5px solid #bfdbfe;
   background: #eff6ff;
@@ -984,6 +1031,43 @@ button {
   color: #0d9488;
   font-weight: 800;
   margin-right: 6px;
+}
+
+.add-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.add-form-grid .input-group {
+  margin-bottom: 14px;
+}
+
+.add-form-grid .input-group label {
+  display: block;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.add-form-grid .input-group input,
+.add-form-grid .input-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #dde3ec;
+  background: #f8fafc;
+  color: #1a2332;
+  border-radius: 8px;
+  outline: none;
+  font: inherit;
+  transition: border-color 0.2s;
+}
+
+.add-form-grid .input-group input:focus,
+.add-form-grid .input-group select:focus {
+  border-color: #0a6ebd;
+  background: #fff;
 }
 
 /* =====================================================

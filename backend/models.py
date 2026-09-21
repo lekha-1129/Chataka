@@ -24,6 +24,7 @@ class Patient(Base):
     age = Column(Integer, nullable=False)
     department = Column(String, nullable=False)
     phone = Column(String, nullable=True)
+    disease = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

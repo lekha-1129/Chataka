@@ -75,6 +75,7 @@ function Layout({
 
     admin: [
       "Dashboard",
+      "Add Patient",
       "Patients",
       "Doctors",
       "Queue Management",
@@ -93,11 +94,11 @@ function Layout({
 
           <div>
             <div className="sidebar-brand-name">
-              ChatakA Health
+              ChatakA
             </div>
 
             <div className="sidebar-brand-sub">
-              HOSPITAL MANAGEMENT
+              SMART QUEUE MANAGEMENT SYSTEM
             </div>
           </div>
         </div>
@@ -146,8 +147,10 @@ function Layout({
 
           <div>
 
-            <div className="dashboard-eyebrow">
-              ChatakA / {user.role}
+            <div className="topbar-breadcrumb">
+              <span className="breadcrumb-role">{user.role.toUpperCase()} PORTAL</span>
+              <span className="breadcrumb-sep">›</span>
+              <span className="breadcrumb-page">{active}</span>
             </div>
 
             <h1>{title}</h1>
@@ -381,20 +384,8 @@ function PatientDashboard({ user, onLogout }) {
         active={active}
         onNavigate={setActive}
         title="My Token"
-        subtitle="Track your current hospital token."
+        subtitle="Your live consultation status."
       >
-
-        <div className="section-title-row">
-
-          <div>
-            <h2>My Current Token</h2>
-
-            <p>
-              Your live consultation status.
-            </p>
-          </div>
-
-        </div>
 
         <div className="dash-card token-display">
 
@@ -492,7 +483,7 @@ function PatientDashboard({ user, onLogout }) {
         active={active}
         onNavigate={setActive}
         title="My Profile"
-        subtitle="View your CHATaka account information."
+        subtitle="View your ChatakA account information."
       >
 
         <ProfileCard
@@ -513,10 +504,8 @@ function PatientDashboard({ user, onLogout }) {
       onLogout={onLogout}
       active="Dashboard"
       onNavigate={setActive}
-      title={`Good to see you, ${
-        user.name.split(" ")[0]
-      }`}
-      subtitle="Manage your hospital visit and track your consultation in real time."
+      title={`Welcome, ${user.name.split(" ")[0]}`}
+      subtitle="Track your token and monitor the live queue."
     >
 
       {message && (
@@ -525,145 +514,7 @@ function PatientDashboard({ user, onLogout }) {
         </div>
       )}
 
-      <div className="hero-banner">
-
-        <div>
-
-          <div className="banner-label">
-            PATIENT PORTAL
-          </div>
-
-          <h2>
-            Your healthcare journey,
-            without the long wait.
-          </h2>
-
-          <p>
-            Get a digital token, see your queue
-            position and know your estimated
-            waiting time.
-          </p>
-
-        </div>
-
-        <div className="banner-symbol">
-          ⌁
-        </div>
-
-      </div>
-
-
-      <div className="section-title-row">
-
-        <div>
-          <h2>My Visit</h2>
-
-          <p>
-            Generate or monitor your hospital token.
-          </p>
-        </div>
-
-        <div className="online-pill">
-          <span />
-          Live System
-        </div>
-
-      </div>
-
-
-      <div className="dashboard-grid two-columns">
-
-        <div className="dash-card">
-
-          <div className="card-label">
-            GET DIGITAL TOKEN
-          </div>
-
-          <h3>Join the queue</h3>
-
-          <p className="card-muted">
-            Choose your department and priority.
-          </p>
-
-          <form onSubmit={generateToken}>
-
-            <label>
-              Department
-
-              <select
-                value={department}
-                onChange={(e) => {
-                  setDepartment(e.target.value);
-                  setTokenInfo(null);
-                }}
-              >
-
-                {departments.map((d) => (
-                  <option key={d}>
-                    {d}
-                  </option>
-                ))}
-
-              </select>
-
-            </label>
-
-
-            {!patient && (
-
-              <label>
-                Age
-
-                <input
-                  type="number"
-                  min="0"
-                  max="120"
-                  value={form.age}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      age: e.target.value,
-                    })
-                  }
-                />
-
-              </label>
-
-            )}
-
-
-            <label>
-              Priority
-
-              <select
-                value={form.priority}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    priority: e.target.value,
-                  })
-                }
-              >
-
-                <option>NORMAL</option>
-                <option>URGENT</option>
-                <option>EMERGENCY</option>
-
-              </select>
-
-            </label>
-
-
-            <button
-              className="purple-button"
-              type="submit"
-            >
-              Generate Token
-            </button>
-
-          </form>
-
-        </div>
+      <div className="dashboard-grid">
 
 
         <div className="dash-card token-display">
@@ -1141,6 +992,59 @@ function AdminDashboard({ user, onLogout }) {
     useState("");
 
 
+  const [patientList, setPatientList] = useState([]);
+  const [addForm, setAddForm] = useState({
+    name: "", age: "", phone: "", disease: "",
+    department: "General Medicine", priority: "NORMAL",
+  });
+  const [addMsg, setAddMsg] = useState("");
+  const [addError, setAddError] = useState("");
+
+  const loadPatients = async () => {
+    try {
+      const res = await fetch(`${API}/admin/patients`);
+      const data = await res.json();
+      setPatientList(data.patients || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const submitAddPatient = async (e) => {
+    e.preventDefault();
+    setAddMsg("");
+    setAddError("");
+    try {
+      const patRes = await fetch(`${API}/patients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: addForm.name.trim(),
+          age: Number(addForm.age),
+          phone: addForm.phone.trim(),
+          disease: addForm.disease.trim(),
+          department: addForm.department,
+        }),
+      });
+      const patData = await patRes.json();
+      if (!patRes.ok) throw new Error(patData.detail || "Failed to add patient");
+
+      const tokRes = await fetch(
+        `${API}/patients/${patData.id}/token?priority=${addForm.priority}`,
+        { method: "POST" }
+      );
+      const tokData = await tokRes.json();
+      if (!tokRes.ok) throw new Error(tokData.detail || "Failed to generate token");
+
+      setAddMsg(`Patient added. Token: ${tokData.token_number}`);
+      setAddForm({ name: "", age: "", phone: "", disease: "", department: "General Medicine", priority: "NORMAL" });
+      await loadPatients();
+      await load();
+    } catch (err) {
+      setAddError(err.message);
+    }
+  };
+
   const load = async () => {
 
     try {
@@ -1176,6 +1080,7 @@ function AdminDashboard({ user, onLogout }) {
   useEffect(() => {
 
     load();
+    loadPatients();
 
     const ws = new WebSocket(
       "ws://127.0.0.1:8000/ws/queue"
@@ -1206,10 +1111,150 @@ function AdminDashboard({ user, onLogout }) {
   };
 
 
+  /* ADMIN - ADD PATIENT */
+
+  if (active === "Add Patient") {
+    return (
+      <Layout
+        user={user}
+        onLogout={onLogout}
+        active={active}
+        onNavigate={(item) => { setActive(item); if (item === "Patients") loadPatients(); }}
+        title="Add Patient"
+        subtitle="Register a new patient and generate a queue token."
+      >
+        <div className="dashboard-grid two-columns">
+
+          <div className="dash-card">
+            <div className="card-label">PATIENT REGISTRATION</div>
+            <h3>New Patient</h3>
+
+            {addMsg && <div className="dashboard-message">✓ {addMsg}</div>}
+            {addError && <div className="auth-error">{addError}</div>}
+
+            <form onSubmit={submitAddPatient}>
+              <div className="add-form-grid">
+
+                <div className="input-group">
+                  <label>Full Name *</label>
+                  <input
+                    required
+                    placeholder="e.g. John Smith"
+                    value={addForm.name}
+                    onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Age *</label>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    max="120"
+                    placeholder="e.g. 35"
+                    value={addForm.age}
+                    onChange={(e) => setAddForm({ ...addForm, age: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Phone</label>
+                  <input
+                    placeholder="e.g. +91 98765 43210"
+                    value={addForm.phone}
+                    onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Disease / Complaint *</label>
+                  <input
+                    required
+                    placeholder="e.g. Fever, Chest pain"
+                    value={addForm.disease}
+                    onChange={(e) => setAddForm({ ...addForm, disease: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Department *</label>
+                  <select
+                    value={addForm.department}
+                    onChange={(e) => setAddForm({ ...addForm, department: e.target.value })}
+                  >
+                    {departments.map((d) => <option key={d}>{d}</option>)}
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label>Priority *</label>
+                  <select
+                    value={addForm.priority}
+                    onChange={(e) => setAddForm({ ...addForm, priority: e.target.value })}
+                  >
+                    <option value="NORMAL">Normal</option>
+                    <option value="URGENT">Urgent</option>
+                    <option value="EMERGENCY">Emergency</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <button type="submit" className="purple-button" style={{ marginTop: 18 }}>
+                Register Patient &amp; Generate Token →
+              </button>
+            </form>
+          </div>
+
+          <div className="dash-card">
+            <div className="card-label">RECENT REGISTRATIONS</div>
+            <h3>Last added patients</h3>
+            {patientList.length === 0 ? (
+              <div className="empty-dark">No patients registered yet.</div>
+            ) : (
+              <div className="dark-table-wrap">
+                <table className="dark-table">
+                  <thead>
+                    <tr>
+                      <th>NAME</th>
+                      <th>AGE</th>
+                      <th>DISEASE</th>
+                      <th>DEPT</th>
+                      <th>TOKEN</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patientList.slice(0, 8).map((p) => (
+                      <tr key={p.id}>
+                        <td><strong>{p.name}</strong></td>
+                        <td>{p.age}</td>
+                        <td>{p.disease || "—"}</td>
+                        <td>{p.department}</td>
+                        <td><strong>{p.token_number}</strong></td>
+                        <td>
+                          <span className={`dark-badge ${(p.status || "").toLowerCase()}`}>
+                            {p.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </Layout>
+    );
+  }
+
+
   /* ADMIN - PATIENTS */
 
   if (active === "Patients") {
-
     return (
       <Layout
         user={user}
@@ -1217,56 +1262,70 @@ function AdminDashboard({ user, onLogout }) {
         active={active}
         onNavigate={setActive}
         title="Patients"
-        subtitle="View hospital patient information."
+        subtitle="All registered patients."
       >
-
         <div className="stats-grid">
-
-          <StatDark
-            label="Total Patients"
-            value={
-              dashboard?.total_patients ?? 0
-            }
-            icon="♙"
-          />
-
-          <StatDark
-            label="Waiting"
-            value={
-              dashboard?.waiting ?? 0
-            }
-            icon="◷"
-          />
-
-          <StatDark
-            label="Completed"
-            value={
-              dashboard?.completed ?? 0
-            }
-            icon="✓"
-          />
-
+          <StatDark label="Total Patients" value={dashboard?.total_patients ?? 0} icon="♙" />
+          <StatDark label="Waiting" value={dashboard?.waiting ?? 0} icon="◷" />
+          <StatDark label="Completed" value={dashboard?.completed ?? 0} icon="✓" />
         </div>
 
         <div className="dash-card">
-
-          <div className="card-label">
-            PATIENT MANAGEMENT
+          <div className="card-heading">
+            <div>
+              <div className="card-label">ALL PATIENTS</div>
+              <h3>Patient Records</h3>
+            </div>
+            <button className="purple-button large" onClick={() => setActive("Add Patient")}>
+              + Add Patient
+            </button>
           </div>
 
-          <h3>
-            Patient records are available
-            through the queue system.
-          </h3>
-
-          <p className="card-muted">
-            Total registered patients:
-            {" "}
-            {dashboard?.total_patients ?? 0}
-          </p>
-
+          {patientList.length === 0 ? (
+            <div className="empty-dark">No patients registered yet.</div>
+          ) : (
+            <div className="dark-table-wrap">
+              <table className="dark-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>NAME</th>
+                    <th>AGE</th>
+                    <th>DISEASE</th>
+                    <th>DEPARTMENT</th>
+                    <th>PHONE</th>
+                    <th>TOKEN</th>
+                    <th>PRIORITY</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patientList.map((p, i) => (
+                    <tr key={p.id}>
+                      <td>{i + 1}</td>
+                      <td><strong>{p.name}</strong></td>
+                      <td>{p.age}</td>
+                      <td>{p.disease || "—"}</td>
+                      <td>{p.department}</td>
+                      <td>{p.phone || "—"}</td>
+                      <td><strong>{p.token_number}</strong></td>
+                      <td>
+                        <span className={`dark-badge ${(p.priority || "").toLowerCase()}`}>
+                          {p.priority}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`dark-badge ${(p.status || "").toLowerCase()}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-
       </Layout>
     );
   }
@@ -1444,10 +1503,7 @@ function AdminDashboard({ user, onLogout }) {
 
                   <i
                     style={{
-                      width: `${Math.min(
-                        100,
-                        count * 12 + 4
-                      )}%`,
+                      width: `${Math.min(100, count * 12)}%`,
                     }}
                   />
 
@@ -1475,7 +1531,7 @@ function AdminDashboard({ user, onLogout }) {
         active={active}
         onNavigate={setActive}
         title="Settings"
-        subtitle="Manage your CHATaka admin session."
+        subtitle="Manage your ChatakA admin session."
       >
 
         <div className="dash-card">
@@ -1640,10 +1696,7 @@ function AdminDashboard({ user, onLogout }) {
 
                   <i
                     style={{
-                      width: `${Math.min(
-                        100,
-                        count * 12 + 4
-                      )}%`,
+                      width: `${Math.min(100, count * 12)}%`,
                     }}
                   />
 
@@ -1668,7 +1721,7 @@ function AdminDashboard({ user, onLogout }) {
       <div className="dash-card feature-card">
 
         <div className="card-label">
-          ChatakA PLATFORM
+          ChatakA
         </div>
 
         <h3>
@@ -1950,6 +2003,8 @@ function FeatureDark({ text }) {
 function iconFor(item) {
 
   const icons = {
+
+    "Add Patient": "+",
 
     Dashboard: "⌂",
 
