@@ -5,8 +5,24 @@ const API = "http://127.0.0.1:8000";
 
 const departments = [
   "General Medicine",
+  "General Surgery",
+  "ENT",
   "Cardiology",
+  "Neurology",
+  "Orthopedics",
+  "Dermatology",
+  "Ophthalmology",
   "Pediatrics",
+  "Gynecology",
+  "Obstetrics",
+  "Urology",
+  "Gastroenterology",
+  "Pulmonology",
+  "Nephrology",
+  "Endocrinology",
+  "Psychiatry",
+  "Dentistry",
+  "Oncology",
   "Emergency",
 ];
 
@@ -90,7 +106,7 @@ function Layout({
       <aside className="sidebar">
 
         <div className="sidebar-brand">
-          <div className="auth-logo">+</div>
+          <img src="/logo.png" alt="ChatakA" className="sidebar-logo" />
 
           <div>
             <div className="sidebar-brand-name">
@@ -994,8 +1010,10 @@ function AdminDashboard({ user, onLogout }) {
 
   const [patientList, setPatientList] = useState([]);
   const [addForm, setAddForm] = useState({
-    name: "", age: "", phone: "", disease: "",
-    department: "General Medicine", priority: "NORMAL",
+    name: "", age: "", dob: "", gender: "",
+    phone: "", email: "", address: "",
+    emergency_contact: "", blood_group: "",
+    disease: "", department: "General Medicine", priority: "NORMAL",
   });
   const [addMsg, setAddMsg] = useState("");
   const [addError, setAddError] = useState("");
@@ -1020,9 +1038,15 @@ function AdminDashboard({ user, onLogout }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: addForm.name.trim(),
-          age: Number(addForm.age),
-          phone: addForm.phone.trim(),
-          disease: addForm.disease.trim(),
+          age: addForm.age ? Number(addForm.age) : null,
+          dob: addForm.dob.trim() || null,
+          gender: addForm.gender || null,
+          phone: addForm.phone.trim() || null,
+          email: addForm.email.trim() || null,
+          address: addForm.address.trim() || null,
+          emergency_contact: addForm.emergency_contact.trim() || null,
+          blood_group: addForm.blood_group || null,
+          disease: addForm.disease.trim() || null,
           department: addForm.department,
         }),
       });
@@ -1037,7 +1061,7 @@ function AdminDashboard({ user, onLogout }) {
       if (!tokRes.ok) throw new Error(tokData.detail || "Failed to generate token");
 
       setAddMsg(`Patient added. Token: ${tokData.token_number}`);
-      setAddForm({ name: "", age: "", phone: "", disease: "", department: "General Medicine", priority: "NORMAL" });
+      setAddForm({ name: "", age: "", dob: "", gender: "", phone: "", email: "", address: "", emergency_contact: "", blood_group: "", disease: "", department: "General Medicine", priority: "NORMAL" });
       await loadPatients();
       await load();
     } catch (err) {
@@ -1146,9 +1170,22 @@ function AdminDashboard({ user, onLogout }) {
                 </div>
 
                 <div className="input-group">
-                  <label>Age *</label>
-                  <input
+                  <label>Gender *</label>
+                  <select
                     required
+                    value={addForm.gender}
+                    onChange={(e) => setAddForm({ ...addForm, gender: e.target.value })}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div className="input-group">
+                  <label>Age</label>
+                  <input
                     type="number"
                     min="0"
                     max="120"
@@ -1159,12 +1196,68 @@ function AdminDashboard({ user, onLogout }) {
                 </div>
 
                 <div className="input-group">
-                  <label>Phone</label>
+                  <label>Date of Birth</label>
                   <input
+                    type="date"
+                    value={addForm.dob}
+                    onChange={(e) => setAddForm({ ...addForm, dob: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Phone Number *</label>
+                  <input
+                    required
                     placeholder="e.g. +91 98765 43210"
                     value={addForm.phone}
                     onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
                   />
+                </div>
+
+                <div className="input-group">
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. patient@email.com"
+                    value={addForm.email}
+                    onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group add-form-full">
+                  <label>Address</label>
+                  <input
+                    placeholder="e.g. 12 Main Street, Chennai"
+                    value={addForm.address}
+                    onChange={(e) => setAddForm({ ...addForm, address: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Emergency Contact</label>
+                  <input
+                    placeholder="Name & phone number"
+                    value={addForm.emergency_contact}
+                    onChange={(e) => setAddForm({ ...addForm, emergency_contact: e.target.value })}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Blood Group</label>
+                  <select
+                    value={addForm.blood_group}
+                    onChange={(e) => setAddForm({ ...addForm, blood_group: e.target.value })}
+                  >
+                    <option value="">Unknown / Not sure</option>
+                    <option>A+</option>
+                    <option>A-</option>
+                    <option>B+</option>
+                    <option>B-</option>
+                    <option>AB+</option>
+                    <option>AB-</option>
+                    <option>O+</option>
+                    <option>O-</option>
+                  </select>
                 </div>
 
                 <div className="input-group">
@@ -1484,10 +1577,11 @@ function AdminDashboard({ user, onLogout }) {
             Current waiting patients
           </h3>
 
+          <div className="dept-load-scroll">
           {dashboard &&
-            Object.entries(
-              dashboard.departments
-            ).map(([name, count]) => (
+            Object.entries(dashboard.departments)
+              .sort((a, b) => b[1] - a[1])
+              .map(([name, count]) => (
 
               <div
                 className="dark-bar-row"
@@ -1500,18 +1594,17 @@ function AdminDashboard({ user, onLogout }) {
                 </div>
 
                 <div className="dark-bar">
-
                   <i
                     style={{
                       width: `${Math.min(100, count * 12)}%`,
                     }}
                   />
-
                 </div>
 
               </div>
 
             ))}
+          </div>
 
         </div>
 
@@ -1677,10 +1770,11 @@ function AdminDashboard({ user, onLogout }) {
             Current waiting patients
           </h3>
 
+          <div className="dept-load-scroll">
           {dashboard &&
-            Object.entries(
-              dashboard.departments
-            ).map(([name, count]) => (
+            Object.entries(dashboard.departments)
+              .sort((a, b) => b[1] - a[1])
+              .map(([name, count]) => (
 
               <div
                 className="dark-bar-row"
@@ -1693,18 +1787,17 @@ function AdminDashboard({ user, onLogout }) {
                 </div>
 
                 <div className="dark-bar">
-
                   <i
                     style={{
                       width: `${Math.min(100, count * 12)}%`,
                     }}
                   />
-
                 </div>
 
               </div>
 
             ))}
+          </div>
 
           <button
             className="outline-button"

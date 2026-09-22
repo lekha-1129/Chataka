@@ -22,12 +22,20 @@ Base.metadata.create_all(bind=engine)
 # Small local-demo migration so an older chataka.db can still run.
 inspector = inspect(engine)
 patient_columns = {column["name"] for column in inspector.get_columns("patients")}
-if "user_id" not in patient_columns:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE patients ADD COLUMN user_id INTEGER"))
-if "disease" not in patient_columns:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE patients ADD COLUMN disease TEXT"))
+new_columns = {
+    "user_id": "INTEGER",
+    "disease": "TEXT",
+    "dob": "TEXT",
+    "gender": "TEXT",
+    "email": "TEXT",
+    "address": "TEXT",
+    "emergency_contact": "TEXT",
+    "blood_group": "TEXT",
+}
+for col, col_type in new_columns.items():
+    if col not in patient_columns:
+        with engine.begin() as connection:
+            connection.execute(text(f"ALTER TABLE patients ADD COLUMN {col} {col_type}"))
 
 get_model()
 
@@ -241,8 +249,14 @@ def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
         user_id=data.user_id,
         name=data.name,
         age=data.age,
+        dob=data.dob,
+        gender=data.gender,
         department=data.department,
         phone=data.phone,
+        email=data.email,
+        address=data.address,
+        emergency_contact=data.emergency_contact,
+        blood_group=data.blood_group,
         disease=data.disease,
     )
     db.add(patient)
@@ -394,7 +408,13 @@ def dashboard(db: Session = Depends(get_db)):
     avg_wait = db.query(func.avg(Token.estimated_wait)).filter(Token.status == "WAITING").scalar()
 
     departments = {}
-    for department in ["General Medicine", "Cardiology", "Pediatrics", "Emergency"]:
+    for department in [
+        "General Medicine", "General Surgery", "ENT", "Cardiology",
+        "Neurology", "Orthopedics", "Dermatology", "Ophthalmology",
+        "Pediatrics", "Gynecology", "Obstetrics", "Urology",
+        "Gastroenterology", "Pulmonology", "Nephrology", "Endocrinology",
+        "Psychiatry", "Dentistry", "Oncology", "Emergency",
+    ]:
         departments[department] = db.query(Token).filter(
             Token.department == department,
             Token.status == "WAITING",

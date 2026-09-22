@@ -103,7 +103,7 @@ function Auth({ onLogin }) {
     <div className="auth-page">
       <div className="auth-left">
         <div className="auth-brand">
-          <div className="auth-logo">+</div>
+          <img src="/logo.png" alt="ChatakA" className="auth-logo-img" />
           <span>ChatakA</span>
         </div>
 

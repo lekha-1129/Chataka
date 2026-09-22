@@ -43,6 +43,21 @@ button {
   color: #fff;
 }
 
+.auth-logo-img {
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.sidebar-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .auth-brand {
   display: flex;
   align-items: center;
@@ -308,7 +323,7 @@ button {
 
 .sidebar {
   width: 255px;
-  min-height: 100vh;
+  height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
@@ -320,6 +335,7 @@ button {
   border-right: 1px solid #dde3ec;
   z-index: 10;
   box-shadow: 2px 0 12px rgba(10, 110, 189, 0.05);
+  overflow: hidden;
 }
 
 .sidebar-brand {
@@ -373,7 +389,15 @@ button {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  overflow-y: auto;
+  flex: 1;
+  margin-bottom: 8px;
+  padding-right: 2px;
 }
+
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: #dde3ec; border-radius: 99px; }
 
 .sidebar-item {
   width: 100%;
@@ -456,16 +480,22 @@ button {
   width: calc(100% - 255px);
   margin-left: 255px;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-topbar {
-  padding: 28px 40px 22px;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  padding: 20px 36px 18px;
   border-bottom: 1px solid #dde3ec;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
   background: #fff;
+  flex-shrink: 0;
 }
 
 .topbar-breadcrumb {
@@ -541,8 +571,10 @@ button {
 .user-chip span { color: #9ca3af; font-size: 10px; margin-top: 2px; }
 
 .dashboard-content {
-  padding: 28px 40px 40px;
-  max-width: 1500px;
+  padding: 24px 36px 40px;
+  width: 100%;
+  max-width: 1400px;
+  flex: 1;
 }
 
 .dashboard-message {
@@ -648,6 +680,7 @@ button {
   display: grid;
   gap: 16px;
   margin-bottom: 16px;
+  align-items: start;
 }
 
 .two-columns {
@@ -658,8 +691,9 @@ button {
   background: #ffffff;
   border: 1px solid #dde3ec;
   border-radius: 14px;
-  padding: 20px;
+  padding: 20px 22px;
   box-shadow: 0 2px 12px rgba(10, 110, 189, 0.05);
+  overflow: hidden;
 }
 
 .dash-card h3 {
@@ -833,16 +867,27 @@ button {
 
 .section-heading-inline > select { width: 190px; }
 
-.dark-table-wrap { overflow-x: auto; }
+.dark-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 420px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.dark-table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+.dark-table-wrap::-webkit-scrollbar-track { background: #f8fafc; }
+.dark-table-wrap::-webkit-scrollbar-thumb { background: #dde3ec; border-radius: 99px; }
 
 .dark-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 520px;
 }
 
 .dark-table th, .dark-table td {
   text-align: left;
-  padding: 12px 10px;
+  padding: 11px 12px;
   border-bottom: 1px solid #e5e7eb;
   font-size: 12px;
   white-space: nowrap;
@@ -853,6 +898,9 @@ button {
   font-size: 9px;
   letter-spacing: 1px;
   background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .dark-table td { color: #374151; }
@@ -946,6 +994,7 @@ button {
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: 16px;
+  align-items: stretch;
 }
 
 .four-stats { grid-template-columns: repeat(4, 1fr); }
@@ -979,7 +1028,18 @@ button {
    ANALYTICS BARS
 ===================================================== */
 
-.dark-bar-row { margin: 16px 0; }
+.dept-load-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 4px;
+}
+
+.dept-load-scroll::-webkit-scrollbar { width: 3px; }
+.dept-load-scroll::-webkit-scrollbar-track { background: transparent; }
+.dept-load-scroll::-webkit-scrollbar-thumb { background: #dde3ec; border-radius: 99px; }
+
+.dark-bar-row { margin: 14px 0; }
 
 .dark-bar-row > div:first-child {
   display: flex;
@@ -1037,7 +1097,14 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0 16px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
+
+.add-form-grid::-webkit-scrollbar { width: 3px; }
+.add-form-grid::-webkit-scrollbar-track { background: transparent; }
+.add-form-grid::-webkit-scrollbar-thumb { background: #dde3ec; border-radius: 99px; }
 
 .add-form-grid .input-group {
   margin-bottom: 14px;
@@ -1049,6 +1116,10 @@ button {
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 5px;
+}
+
+.add-form-full {
+  grid-column: 1 / -1;
 }
 
 .add-form-grid .input-group input,
@@ -1077,8 +1148,9 @@ button {
 @media (max-width: 1000px) {
   .sidebar { width: 210px; }
   .dashboard-main { width: calc(100% - 210px); margin-left: 210px; }
-  .dashboard-content, .dashboard-topbar { padding-left: 22px; padding-right: 22px; }
+  .dashboard-content, .dashboard-topbar { padding-left: 20px; padding-right: 20px; }
   .two-columns, .four-stats, .feature-grid { grid-template-columns: 1fr 1fr; }
+  .add-form-grid { grid-template-columns: 1fr 1fr; }
 }
 
 /* =====================================================
@@ -1092,17 +1164,19 @@ button {
   .auth-content { margin: 60px 0 25px; }
   .auth-content h1 { font-size: 34px; }
   .auth-features { grid-template-columns: 1fr; }
-  .sidebar { position: relative; width: 100%; min-height: auto; }
-  .sidebar-nav { flex-direction: row; overflow-x: auto; }
+  .sidebar { position: relative; width: 100%; height: auto; }
+  .sidebar-nav { flex-direction: row; overflow-x: auto; overflow-y: hidden; max-height: none; flex: none; }
   .sidebar-item { white-space: nowrap; width: auto; flex-shrink: 0; }
   .sidebar-logout { margin-top: 20px; }
   .dashboard-main { width: 100%; margin-left: 0; }
   .dashboard-shell { display: block; }
-  .dashboard-topbar { align-items: flex-start; flex-direction: column; }
+  .dashboard-topbar { align-items: flex-start; flex-direction: column; position: relative; }
   .two-columns, .four-stats, .feature-grid, .stats-grid { grid-template-columns: 1fr; }
+  .add-form-grid { grid-template-columns: 1fr; max-height: none; }
   .doctor-toolbar { align-items: stretch; flex-direction: column; }
   .doctor-toolbar > div { width: 100%; }
   .purple-button.large { width: 100%; }
+  .dark-table-wrap { max-height: 320px; }
 }
 
 @media (max-width: 500px) {

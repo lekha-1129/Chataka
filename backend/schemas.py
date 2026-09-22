@@ -17,9 +17,15 @@ class LoginRequest(BaseModel):
 
 class PatientCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
-    age: int = Field(ge=0, le=120)
+    age: int | None = None
+    dob: str | None = None
+    gender: str | None = None
     department: str
     phone: str | None = None
+    email: str | None = None
+    address: str | None = None
+    emergency_contact: str | None = None
+    blood_group: str | None = None
     disease: str | None = None
     priority: str = "NORMAL"
     user_id: int | None = None
@@ -29,9 +35,15 @@ class PatientResponse(BaseModel):
     id: int
     user_id: int | None = None
     name: str
-    age: int
+    age: int | None = None
+    dob: str | None = None
+    gender: str | None = None
     department: str
     phone: str | None = None
+    email: str | None = None
+    address: str | None = None
+    emergency_contact: str | None = None
+    blood_group: str | None = None
     disease: str | None = None
 
     class Config:
