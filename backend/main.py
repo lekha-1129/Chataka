@@ -8,13 +8,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, inspect, text
 
 from database import Base, engine, get_db
-from models import User, Patient, Token, Doctor
+from models import User, Patient, Token
 from schemas import (
     SignupRequest,
     LoginRequest,
     PatientCreate,
     PatientResponse,
-    DoctorResponse,
 )
 from ml_model import predict_wait, get_model
 
@@ -39,46 +38,6 @@ for col, col_type in new_columns.items():
             connection.execute(text(f"ALTER TABLE patients ADD COLUMN {col} {col_type}"))
 
 get_model()
-
-# Seed doctors table with one doctor per department if empty
-_DOCTOR_SEEDS = [
-    ("Dr. Ramesh Kumar",   "General Medicine",   "General Physician",    "12 yrs", "Mon-Sat, 9am-5pm",  "+91 98001 00001", "ramesh.kumar@chataka.in"),
-    ("Dr. Priya Nair",     "General Surgery",    "General Surgeon",      "15 yrs", "Mon-Fri, 8am-4pm",  "+91 98001 00002", "priya.nair@chataka.in"),
-    ("Dr. Suresh Menon",   "ENT",                "ENT Specialist",       "10 yrs", "Tue-Sat, 10am-6pm", "+91 98001 00003", "suresh.menon@chataka.in"),
-    ("Dr. Anita Sharma",   "Cardiology",         "Cardiologist",         "18 yrs", "Mon-Fri, 9am-3pm",  "+91 98001 00004", "anita.sharma@chataka.in"),
-    ("Dr. Vikram Iyer",    "Neurology",          "Neurologist",          "14 yrs", "Mon-Thu, 10am-5pm", "+91 98001 00005", "vikram.iyer@chataka.in"),
-    ("Dr. Deepak Pillai",  "Orthopedics",        "Orthopedic Surgeon",   "16 yrs", "Mon-Sat, 9am-4pm",  "+91 98001 00006", "deepak.pillai@chataka.in"),
-    ("Dr. Kavitha Rao",    "Dermatology",        "Dermatologist",        "9 yrs",  "Wed-Sun, 11am-6pm", "+91 98001 00007", "kavitha.rao@chataka.in"),
-    ("Dr. Arun Krishnan",  "Ophthalmology",      "Ophthalmologist",      "11 yrs", "Mon-Fri, 9am-5pm",  "+91 98001 00008", "arun.krishnan@chataka.in"),
-    ("Dr. Meena Chandran", "Pediatrics",         "Pediatrician",         "13 yrs", "Mon-Sat, 8am-3pm",  "+91 98001 00009", "meena.chandran@chataka.in"),
-    ("Dr. Lakshmi Devi",   "Gynecology",         "Gynecologist",         "17 yrs", "Mon-Fri, 10am-5pm", "+91 98001 00010", "lakshmi.devi@chataka.in"),
-    ("Dr. Sujatha Balan",  "Obstetrics",         "Obstetrician",         "20 yrs", "Mon-Sat, 9am-4pm",  "+91 98001 00011", "sujatha.balan@chataka.in"),
-    ("Dr. Harish Nambiar", "Urology",            "Urologist",            "12 yrs", "Tue-Sat, 9am-5pm",  "+91 98001 00012", "harish.nambiar@chataka.in"),
-    ("Dr. Rajan Pillai",   "Gastroenterology",   "Gastroenterologist",   "15 yrs", "Mon-Fri, 9am-4pm",  "+91 98001 00013", "rajan.pillai@chataka.in"),
-    ("Dr. Sindhu Varma",   "Pulmonology",        "Pulmonologist",        "11 yrs", "Mon-Thu, 10am-5pm", "+91 98001 00014", "sindhu.varma@chataka.in"),
-    ("Dr. Biju Thomas",    "Nephrology",         "Nephrologist",         "14 yrs", "Mon-Fri, 9am-3pm",  "+91 98001 00015", "biju.thomas@chataka.in"),
-    ("Dr. Nisha George",   "Endocrinology",      "Endocrinologist",      "10 yrs", "Tue-Sat, 10am-5pm", "+91 98001 00016", "nisha.george@chataka.in"),
-    ("Dr. Ajay Menon",     "Psychiatry",         "Psychiatrist",         "13 yrs", "Mon-Fri, 10am-6pm", "+91 98001 00017", "ajay.menon@chataka.in"),
-    ("Dr. Pooja Shetty",   "Dentistry",          "Dental Surgeon",       "8 yrs",  "Mon-Sat, 9am-5pm",  "+91 98001 00018", "pooja.shetty@chataka.in"),
-    ("Dr. Sunil Mathew",   "Oncology",           "Oncologist",           "19 yrs", "Mon-Fri, 9am-4pm",  "+91 98001 00019", "sunil.mathew@chataka.in"),
-    ("Dr. Renu Krishnan",  "Emergency",          "Emergency Medicine",   "10 yrs", "24/7 On-call",      "+91 98001 00020", "renu.krishnan@chataka.in"),
-]
-
-def _seed_doctors():
-    from database import SessionLocal
-    db = SessionLocal()
-    try:
-        if db.query(Doctor).count() == 0:
-            for name, dept, spec, exp, avail, phone, email in _DOCTOR_SEEDS:
-                db.add(Doctor(
-                    name=name, department=dept, specialization=spec,
-                    experience=exp, availability=avail, phone=phone, email=email,
-                ))
-            db.commit()
-    finally:
-        db.close()
-
-_seed_doctors()
 
 app = FastAPI(
     title="CHATaka API",
@@ -527,14 +486,6 @@ async def reset_demo(db: Session = Depends(get_db)):
     db.commit()
     await manager.broadcast({"type": "RESET"})
     return {"message": "Demo data cleared"}
-
-
-@app.get("/doctors/by-department/{department}", response_model=DoctorResponse)
-def get_doctor_by_department(department: str, db: Session = Depends(get_db)):
-    doctor = db.query(Doctor).filter(Doctor.department == department).first()
-    if not doctor:
-        raise HTTPException(status_code=404, detail="No doctor found for this department")
-    return doctor
 
 
 @app.websocket("/ws/queue")

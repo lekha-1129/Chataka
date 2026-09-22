@@ -50,19 +50,7 @@ class PatientResponse(BaseModel):
         from_attributes = True
 
 
-class DoctorResponse(BaseModel):
-    id: int
-    name: str
-    department: str
-    specialization: str
-    experience: str
-    availability: str
-    phone: str | None = None
-    email: str | None = None
-
-    class Config:
-        from_attributes = True
-
+class TokenResponse(BaseModel):
     token_number: str
     priority: str
     status: str
