@@ -84,9 +84,6 @@ function Layout({
 
     doctor: [
       "Dashboard",
-      "Patient Queue",
-      "Completed",
-      "Profile",
     ],
 
     admin: [
@@ -612,13 +609,16 @@ function DoctorDashboard({ user, onLogout }) {
     useState("Dashboard");
 
   const [department, setDepartment] =
-    useState("General Medicine");
+    useState(user?.department || "");
 
   const [queue, setQueue] =
     useState([]);
 
   const [completedPatients, setCompletedPatients] =
     useState([]);
+
+  const [consultationView, setConsultationView] =
+    useState("waiting");
 
   const [message, setMessage] =
     useState("");
@@ -637,36 +637,7 @@ function DoctorDashboard({ user, onLogout }) {
       const data = await res.json();
 
       setQueue(data.queue || []);
-
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-
-  const loadCompleted = async () => {
-
-    try {
-
-      const res = await fetch(
-        `${API}/queue/${encodeURIComponent(
-          department
-        )}`
-      );
-
-      const data = await res.json();
-
-      /*
-        The current backend queue endpoint returns
-        WAITING patients only.
-
-        Completed patients will be connected
-        after we add the completed endpoint.
-      */
-
-      setCompletedPatients(
-        data.completed || []
-      );
+      setCompletedPatients(data.completed || []);
 
     } catch (error) {
       console.error(error);
@@ -691,6 +662,7 @@ function DoctorDashboard({ user, onLogout }) {
         data.department === department
       ) {
         setQueue(data.queue || []);
+        setCompletedPatients(data.completed || []);
       }
 
       if (data.type === "RESET") {
@@ -763,140 +735,6 @@ function DoctorDashboard({ user, onLogout }) {
   };
 
 
-  /* DOCTOR - PATIENT QUEUE */
-
-  if (active === "Patient Queue") {
-
-    return (
-      <Layout
-        user={user}
-        onLogout={onLogout}
-        active={active}
-        onNavigate={setActive}
-        title="Patient Queue"
-        subtitle="View and manage patients waiting for consultation."
-      >
-
-        <div className="doctor-toolbar">
-
-          <div>
-
-            <div className="card-label">
-              DEPARTMENT
-            </div>
-
-            <select
-              value={department}
-              onChange={(e) =>
-                setDepartment(e.target.value)
-              }
-            >
-
-              {departments.map((d) => (
-                <option key={d}>
-                  {d}
-                </option>
-              ))}
-
-            </select>
-
-          </div>
-
-          <button
-            className="purple-button large"
-            onClick={callNext}
-          >
-            Call Next Patient →
-          </button>
-
-        </div>
-
-
-        {message && (
-          <div className="dashboard-message">
-            ✓ {message}
-          </div>
-        )}
-
-
-        <QueueTableDark
-          queue={queue}
-          title="Patients Waiting"
-          action={complete}
-        />
-
-      </Layout>
-    );
-  }
-
-
-  /* DOCTOR - COMPLETED */
-
-  if (active === "Completed") {
-
-    return (
-      <Layout
-        user={user}
-        onLogout={onLogout}
-        active={active}
-        onNavigate={setActive}
-        title="Completed Consultations"
-        subtitle="View patients whose consultations have been completed."
-      >
-
-        <div className="dash-card">
-
-          <div className="card-label">
-            COMPLETED PATIENTS
-          </div>
-
-          {completedPatients.length === 0 ? (
-
-            <div className="empty-dark">
-              Completed consultations will
-              appear here after the backend
-              completed endpoint is added.
-            </div>
-
-          ) : (
-
-            <QueueTableDark
-              queue={completedPatients}
-              title="Completed"
-            />
-
-          )}
-
-        </div>
-
-      </Layout>
-    );
-  }
-
-
-  /* DOCTOR - PROFILE */
-
-  if (active === "Profile") {
-
-    return (
-      <Layout
-        user={user}
-        onLogout={onLogout}
-        active={active}
-        onNavigate={setActive}
-        title="Doctor Profile"
-        subtitle="View your doctor account information."
-      >
-
-        <ProfileCard user={user} />
-
-      </Layout>
-    );
-  }
-
-
-  /* DOCTOR - DASHBOARD */
-
   return (
     <Layout
       user={user}
@@ -904,7 +742,7 @@ function DoctorDashboard({ user, onLogout }) {
       active="Dashboard"
       onNavigate={setActive}
       title="Doctor Dashboard"
-      subtitle="Monitor the live patient queue and manage consultations."
+      subtitle=""
     >
 
       {message && (
@@ -921,20 +759,19 @@ function DoctorDashboard({ user, onLogout }) {
             DEPARTMENT
           </div>
 
-          <select
-            value={department}
-            onChange={(e) =>
-              setDepartment(e.target.value)
-            }
+          <div
+            style={{
+              minWidth: 220,
+              padding: "12px 14px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#f3f6fb",
+              fontWeight: 700,
+            }}
           >
-
-            {departments.map((d) => (
-              <option key={d}>
-                {d}
-              </option>
-            ))}
-
-          </select>
+            {department || " "}
+          </div>
 
         </div>
 
@@ -946,7 +783,6 @@ function DoctorDashboard({ user, onLogout }) {
         </button>
 
       </div>
-
 
       <div className="stats-grid">
 
@@ -972,14 +808,55 @@ function DoctorDashboard({ user, onLogout }) {
           icon="◒"
         />
 
+        <StatDark
+          label="Completed Consultation"
+          value={completedPatients.length}
+          icon="✓"
+        />
+
       </div>
 
+      <div className="doctor-toolbar" style={{ marginTop: 16 }}>
 
-      <QueueTableDark
-        queue={queue}
-        title="Patients Waiting"
-        action={complete}
-      />
+        <div>
+
+          <div className="card-label">
+            FILTER
+          </div>
+
+          <select
+            value={consultationView}
+            onChange={(e) =>
+              setConsultationView(e.target.value)
+            }
+          >
+            <option value="waiting">
+              Waiting Patients
+            </option>
+            <option value="completed">
+              Completed Consultation
+            </option>
+          </select>
+
+        </div>
+
+      </div>
+
+      {consultationView === "completed" ? (
+        <QueueTableDark
+          queue={completedPatients}
+          title="Completed Consultation"
+          emptyMessage="No completed consultations for this department yet."
+          showCompletedTime
+        />
+      ) : (
+        <QueueTableDark
+          queue={queue}
+          title="Patients Waiting"
+          action={complete}
+          emptyMessage="No patients currently waiting."
+        />
+      )}
 
     </Layout>
   );
@@ -1907,11 +1784,27 @@ function ProfileCard({ user, patient }) {
    QUEUE TABLE
 ========================================================= */
 
+function formatCompletedTime(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function QueueTableDark({
   queue,
   title,
   action,
   compact = false,
+  emptyMessage = "No patients currently waiting.",
+  showCompletedTime = false,
 }) {
 
   return (
@@ -1948,7 +1841,7 @@ function QueueTableDark({
       {queue.length === 0 ? (
 
         <div className="empty-dark">
-          No patients currently waiting.
+          {emptyMessage}
         </div>
 
       ) : (
@@ -1965,7 +1858,7 @@ function QueueTableDark({
                 <th>TOKEN</th>
                 <th>PATIENT</th>
                 <th>PRIORITY</th>
-                <th>WAIT</th>
+                <th>{showCompletedTime ? "COMPLETED" : "WAIT"}</th>
 
                 {action && (
                   <th>ACTION</th>
@@ -1982,7 +1875,7 @@ function QueueTableDark({
                 <tr key={item.token_number}>
 
                   <td>
-                    #{item.position}
+                    #{item.position || 1}
                   </td>
 
                   <td>
@@ -2006,7 +1899,9 @@ function QueueTableDark({
                   </td>
 
                   <td>
-                    {item.estimated_wait} min
+                    {showCompletedTime
+                      ? formatCompletedTime(item.completed_at)
+                      : `${item.estimated_wait} min`}
                   </td>
 
                   {action && (

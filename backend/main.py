@@ -96,6 +96,19 @@ def get_waiting_tokens(db: Session, department: str):
     )
 
 
+def get_completed_tokens(db: Session, department: str):
+    tokens = (
+        db.query(Token)
+        .filter(Token.department == department, Token.status == "COMPLETED")
+        .all()
+    )
+    return sorted(
+        tokens,
+        key=lambda t: (t.completed_at or datetime.min, t.id),
+        reverse=True,
+    )
+
+
 def department_stats(db: Session, department: str):
     waiting = get_waiting_tokens(db, department)
     doctors_available = 3
@@ -147,6 +160,7 @@ def token_payload(db: Session, token: Token) -> dict:
 async def broadcast_queue(db: Session, department: str):
     department_stats(db, department)
     waiting = get_waiting_tokens(db, department)
+    completed = get_completed_tokens(db, department)
 
     queue = []
     for i, token in enumerate(waiting):
@@ -160,10 +174,24 @@ async def broadcast_queue(db: Session, department: str):
             "estimated_wait": token.estimated_wait or 0,
         })
 
+    completed_queue = []
+    for i, token in enumerate(completed):
+        patient = db.query(Patient).filter(Patient.id == token.patient_id).first()
+        completed_queue.append({
+            "token_number": token.token_number,
+            "patient_name": patient.name if patient else "Unknown",
+            "priority": token.priority,
+            "status": token.status,
+            "position": i + 1,
+            "estimated_wait": 0,
+            "completed_at": token.completed_at.isoformat() if token.completed_at else None,
+        })
+
     await manager.broadcast({
         "type": "QUEUE_UPDATE",
         "department": department,
         "queue": queue,
+        "completed": completed_queue,
     })
 
 
@@ -303,6 +331,8 @@ async def create_token(patient_id: int, priority: str = "NORMAL", db: Session = 
 @app.get("/queue/{department}")
 def get_queue(department: str, db: Session = Depends(get_db)):
     waiting = department_stats(db, department)
+    completed = get_completed_tokens(db, department)
+
     result = []
     for i, token in enumerate(waiting):
         patient = db.query(Patient).filter(Patient.id == token.patient_id).first()
@@ -314,7 +344,26 @@ def get_queue(department: str, db: Session = Depends(get_db)):
             "position": i + 1,
             "estimated_wait": token.estimated_wait or 0,
         })
-    return {"department": department, "queue_length": len(result), "queue": result}
+
+    completed_result = []
+    for i, token in enumerate(completed):
+        patient = db.query(Patient).filter(Patient.id == token.patient_id).first()
+        completed_result.append({
+            "token_number": token.token_number,
+            "patient_name": patient.name if patient else "Unknown",
+            "priority": token.priority,
+            "status": token.status,
+            "position": i + 1,
+            "estimated_wait": 0,
+            "completed_at": token.completed_at.isoformat() if token.completed_at else None,
+        })
+
+    return {
+        "department": department,
+        "queue_length": len(result),
+        "queue": result,
+        "completed": completed_result,
+    }
 
 
 @app.get("/tokens/{token_number}")
