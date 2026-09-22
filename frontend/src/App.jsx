@@ -198,403 +198,195 @@ function Layout({
 }
 
 
+
 /* =========================================================
    PATIENT DASHBOARD
 ========================================================= */
 
 function PatientDashboard({ user, onLogout }) {
 
-  const [active, setActive] = useState("Dashboard");
-
-  const [department, setDepartment] =
-    useState("General Medicine");
-
+  const [department, setDepartment] = useState("General Medicine");
   const [queue, setQueue] = useState([]);
-
-  const [tokenInfo, setTokenInfo] =
-    useState(null);
-
-  const [patient, setPatient] =
-    useState(null);
-
-  const [message, setMessage] =
-    useState("");
-
-  const [form, setForm] = useState({
-    age: 25,
-    priority: "NORMAL",
-  });
-
+  const [tokenInfo, setTokenInfo] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [message, setMessage] = useState("");
+  const [doctor, setDoctor] = useState(null);
 
   const loadPatientData = async () => {
-
     try {
-
-      const res = await fetch(
-        `${API}/patient/token/${user.id}`
-      );
-
+      const res = await fetch(`${API}/patient/token/${user.id}`);
       const data = await res.json();
-
-      if (data.patient) {
-        setPatient(data.patient);
-      }
-
+      if (data.patient) setPatient(data.patient);
       if (data.token) {
         setTokenInfo(data.token);
         setDepartment(data.token.department);
       }
-
     } catch (error) {
       console.error(error);
     }
   };
 
-
-  const loadQueue = async (
-    dept = department
-  ) => {
-
+  const loadQueue = async (dept = department) => {
     try {
-
-      const res = await fetch(
-        `${API}/queue/${encodeURIComponent(dept)}`
-      );
-
+      const res = await fetch(`${API}/queue/${encodeURIComponent(dept)}`);
       const data = await res.json();
-
       setQueue(data.queue || []);
-
     } catch (error) {
       console.error(error);
     }
   };
 
+  const loadDoctor = async (dept = department) => {
+    try {
+      const res = await fetch(`${API}/doctors/by-department/${encodeURIComponent(dept)}`);
+      if (res.ok) setDoctor(await res.json());
+      else setDoctor(null);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
-
     loadPatientData();
     loadQueue();
+    loadDoctor();
 
-    const ws = new WebSocket(
-      "ws://127.0.0.1:8000/ws/queue"
-    );
-
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws/queue");
     ws.onmessage = (event) => {
-
       const data = JSON.parse(event.data);
-
-      if (
-        data.type === "QUEUE_UPDATE" &&
-        data.department === department
-      ) {
-
+      if (data.type === "QUEUE_UPDATE" && data.department === department) {
         setQueue(data.queue || []);
-
         loadPatientData();
       }
-
       if (data.type === "RESET") {
-
         setQueue([]);
         setTokenInfo(null);
       }
-
     };
-
     return () => ws.close();
-
   }, [department]);
 
-
-  const generateToken = async (e) => {
-
-    e.preventDefault();
-
-    try {
-
-      let patientId = patient?.id;
-
-      if (!patientId) {
-
-        const userRes = await fetch(
-          `${API}/patients`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-
-            body: JSON.stringify({
-              user_id: user.id,
-              name: user.name,
-              age: Number(form.age),
-              phone: user.phone || "",
-              department,
-            }),
-          }
-        );
-
-        const patientData =
-          await userRes.json();
-
-        if (!userRes.ok) {
-          throw new Error(
-            patientData.detail ||
-            "Unable to create patient"
-          );
-        }
-
-        patientId = patientData.id;
-
-        setPatient(patientData);
-      }
-
-      const tokenRes = await fetch(
-        `${API}/patients/${patientId}/token?priority=${form.priority}`,
-        {
-          method: "POST",
-        }
-      );
-
-      const token =
-        await tokenRes.json();
-
-      if (!tokenRes.ok) {
-        throw new Error(
-          token.detail ||
-          "Unable to generate token"
-        );
-      }
-
-      setTokenInfo(token);
-
-      setMessage(
-        "Your digital token has been generated."
-      );
-
-      await loadQueue(department);
-
-    } catch (error) {
-
-      setMessage(
-        error.message ||
-        "Unable to generate token."
-      );
-
-    }
-  };
-
-
-  /* PATIENT - MY TOKEN */
-
-  if (active === "My Token") {
-
-    return (
-      <Layout
-        user={user}
-        onLogout={onLogout}
-        active={active}
-        onNavigate={setActive}
-        title="My Token"
-        subtitle="Your live consultation status."
-      >
-
-        <div className="dash-card token-display">
-
-          {tokenInfo ? (
-
-            <>
-              <div className="card-label">
-                CURRENT TOKEN
-              </div>
-
-              <div className="big-token">
-                {tokenInfo.token_number}
-              </div>
-
-              <div className="token-status">
-                <span />
-                {tokenInfo.status}
-              </div>
-
-              <div className="mini-stats">
-
-                <div>
-                  <span>Queue Position</span>
-                  <strong>
-                    #{tokenInfo.position || "—"}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Estimated Wait</span>
-                  <strong>
-                    {tokenInfo.estimated_wait} min
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Priority</span>
-                  <strong>
-                    {tokenInfo.priority}
-                  </strong>
-                </div>
-
-              </div>
-            </>
-
-          ) : (
-
-            <div className="empty-dark">
-              No active token.
-              <br />
-              Generate a token from the Dashboard.
-            </div>
-
-          )}
-
-        </div>
-
-      </Layout>
-    );
-  }
-
-
-  /* PATIENT - LIVE QUEUE */
-
-  if (active === "Live Queue") {
-
-    return (
-      <Layout
-        user={user}
-        onLogout={onLogout}
-        active={active}
-        onNavigate={setActive}
-        title="Live Queue"
-        subtitle="Monitor your department queue in real time."
-      >
-
-        <QueueTableDark
-          queue={queue}
-          title={`${department} — Live Queue`}
-        />
-
-      </Layout>
-    );
-  }
-
-
-  /* PATIENT - PROFILE */
-
-  if (active === "Profile") {
-
-    return (
-      <Layout
-        user={user}
-        onLogout={onLogout}
-        active={active}
-        onNavigate={setActive}
-        title="My Profile"
-        subtitle="View your ChatakA account information."
-      >
-
-        <ProfileCard
-          user={user}
-          patient={patient}
-        />
-
-      </Layout>
-    );
-  }
-
-
-  /* PATIENT - DASHBOARD */
+  const activeDept = tokenInfo?.department || department;
 
   return (
-    <Layout
-      user={user}
-      onLogout={onLogout}
-      active="Dashboard"
-      onNavigate={setActive}
-      title={`Welcome, ${user.name.split(" ")[0]}`}
-      subtitle="Track your token and monitor the live queue."
-    >
+    <div className="patient-shell">
 
-      {message && (
-        <div className="dashboard-message">
-          ✓ {message}
+      {/* TOP BAR */}
+      <header className="patient-topbar">
+        <div className="patient-topbar-brand">
+          <img src="/logo.png" alt="ChatakA" className="sidebar-logo" />
+          <div>
+            <div className="sidebar-brand-name">ChatakA</div>
+            <div className="sidebar-brand-sub">SMART QUEUE MANAGEMENT SYSTEM</div>
+          </div>
         </div>
-      )}
+      </header>
 
-      <div className="dashboard-grid">
+      {/* CONTENT */}
+      <div className="patient-content">
 
+        <div className="patient-page-header">
+          <h1>Welcome, {user.name.split(" ")[0]}</h1>
+          <p>Your token status and live queue for <strong>{activeDept}</strong></p>
+        </div>
 
-        <div className="dash-card token-display">
+        {message && (
+          <div className="dashboard-message">✓ {message}</div>
+        )}
 
-          <div className="card-label">
-            CURRENT TOKEN
+        {/* TOKEN + DOCTOR ROW */}
+        <div className="patient-main-grid">
+
+          {/* LEFT: TOKEN CARD */}
+          <div className="dash-card token-display">
+            <div className="card-label">CURRENT TOKEN</div>
+            {tokenInfo ? (
+              <>
+                <div className="big-token">{tokenInfo.token_number}</div>
+                <div className="token-status"><span />{tokenInfo.status}</div>
+                <div className="mini-stats">
+                  <div>
+                    <span>Queue Position</span>
+                    <strong>#{tokenInfo.position || "—"}</strong>
+                  </div>
+                  <div>
+                    <span>Estimated Wait</span>
+                    <strong>{tokenInfo.estimated_wait} min</strong>
+                  </div>
+                  <div>
+                    <span>Priority</span>
+                    <strong>{tokenInfo.priority}</strong>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="empty-dark">
+                No active token yet.<br />Contact the admin to register.
+              </div>
+            )}
           </div>
 
-          {tokenInfo ? (
-
-            <>
-              <div className="big-token">
-                {tokenInfo.token_number}
-              </div>
-
-              <div className="token-status">
-                <span />
-                {tokenInfo.status}
-              </div>
-
-              <div className="mini-stats">
-
+          {/* RIGHT: DOCTOR CARD */}
+          {doctor && (
+            <div className="dash-card doctor-info-card">
+              <div className="card-label">YOUR DOCTOR</div>
+              <div className="doctor-avatar-row">
+                <div className="doctor-avatar">🩺</div>
                 <div>
-                  <span>Queue Position</span>
-                  <strong>
-                    #{tokenInfo.position || "—"}
-                  </strong>
+                  <h3>{doctor.name}</h3>
+                  <span className="doctor-spec">{doctor.specialization}</span>
                 </div>
-
-                <div>
-                  <span>Estimated Wait</span>
-                  <strong>
-                    {tokenInfo.estimated_wait} min
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Priority</span>
-                  <strong>
-                    {tokenInfo.priority}
-                  </strong>
-                </div>
-
               </div>
-            </>
-
-          ) : (
-
-            <div className="empty-dark">
-              No active token yet.
-              <br />
-              Generate one to start tracking.
+              <div className="doctor-details">
+                <div>
+                  <span>Department</span>
+                  <strong>{doctor.department}</strong>
+                </div>
+                <div>
+                  <span>Experience</span>
+                  <strong>{doctor.experience}</strong>
+                </div>
+                <div>
+                  <span>Availability</span>
+                  <strong>{doctor.availability}</strong>
+                </div>
+                <div>
+                  <span>Phone</span>
+                  <strong>{doctor.phone || "—"}</strong>
+                </div>
+                <div>
+                  <span>Email</span>
+                  <strong>{doctor.email || "—"}</strong>
+                </div>
+                <div>
+                  <span>Patients Waiting</span>
+                  <strong>{queue.length}</strong>
+                </div>
+              </div>
             </div>
-
           )}
 
         </div>
+
+        {/* DEPARTMENT QUEUE */}
+        <QueueTableDark
+          queue={queue}
+          title={`${activeDept} — Live Queue`}
+        />
 
       </div>
 
+      {/* BOTTOM-LEFT USER BOX */}
+      <div className="patient-user-box">
+        <div className="patient-user-avatar">{user.name?.charAt(0).toUpperCase()}</div>
+        <div className="patient-user-info">
+          <strong>{user.name}</strong>
+          <span>{user.email}</span>
+          <button className="patient-logout-btn" onClick={onLogout}>↪ Logout</button>
+        </div>
+      </div>
 
-      <QueueTableDark
-        queue={queue}
-        title={`${department} — Live Queue`}
-      />
-
-    </Layout>
+    </div>
   );
 }
 

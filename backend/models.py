@@ -47,3 +47,16 @@ class Token(Base):
     called_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     estimated_wait = Column(Integer, default=0)
+
+
+class Doctor(Base):
+    __tablename__ = "doctors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    department = Column(String, nullable=False, unique=True, index=True)
+    specialization = Column(String, nullable=False)
+    experience = Column(String, nullable=False)
+    availability = Column(String, nullable=False)
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)

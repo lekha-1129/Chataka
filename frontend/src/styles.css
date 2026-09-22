@@ -307,6 +307,207 @@ button {
 }
 
 /* =====================================================
+   PATIENT PORTAL (no sidebar)
+===================================================== */
+
+.patient-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f0f4f8;
+}
+
+.patient-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 36px;
+  background: #fff;
+  border-bottom: 1px solid #dde3ec;
+  box-shadow: 0 2px 12px rgba(10,110,189,0.05);
+}
+
+.patient-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.patient-content {
+  padding: 28px 36px 100px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.patient-page-header {
+  margin-bottom: 22px;
+}
+
+.patient-page-header h1 {
+  margin: 0 0 4px;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+  color: #1a2332;
+}
+
+.patient-page-header p {
+  margin: 0;
+  color: #6b7a8d;
+  font-size: 13px;
+}
+
+/* token + doctor side by side */
+.patient-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+/* DOCTOR INFO CARD */
+.doctor-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.doctor-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.doctor-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eff6ff, #f0fdfa);
+  border: 1.5px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.doctor-info-card h3 {
+  margin: 0 0 3px;
+  font-size: 15px;
+  color: #1a2332;
+}
+
+.doctor-spec {
+  font-size: 11px;
+  color: #0a6ebd;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.doctor-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 8px;
+}
+
+.doctor-details > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.doctor-details span {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.doctor-details strong {
+  font-size: 13px;
+  color: #1a2332;
+}
+
+/* BOTTOM-LEFT USER BOX */
+.patient-user-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #dde3ec;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 20px rgba(10,110,189,0.10);
+  width: fit-content;
+  margin-top: 24px;
+}
+
+.patient-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0a6ebd, #0d9488);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.patient-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.patient-user-info strong {
+  font-size: 13px;
+  color: #1a2332;
+  display: block;
+}
+
+.patient-user-info span {
+  font-size: 11px;
+  color: #9ca3af;
+  display: block;
+}
+
+.patient-logout-btn {
+  margin-top: 6px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #6b7a8d;
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 11px;
+  transition: 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.patient-logout-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+@media (max-width: 800px) {
+  .patient-topbar { padding: 12px 16px; }
+  .patient-content { padding: 18px 14px 120px; }
+  .patient-main-grid { grid-template-columns: 1fr; }
+  .patient-user-box { margin-top: 16px; }
+}
+
+/* =====================================================
    DASHBOARD SHELL
 ===================================================== */
 
