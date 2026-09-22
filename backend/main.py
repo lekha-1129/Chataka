@@ -8,12 +8,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, inspect, text
 
 from database import Base, engine, get_db
-from models import User, Patient, Token
+from models import User, Patient, Doctor, Token
 from schemas import (
     SignupRequest,
     LoginRequest,
     PatientCreate,
     PatientResponse,
+    DoctorCreate,
+    DoctorResponse
 )
 from ml_model import predict_wait, get_model
 
@@ -292,9 +294,61 @@ def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
     db.refresh(patient)
     return patient
 
+@app.post("/doctors", response_model=DoctorResponse)
+def create_doctor(doctor: DoctorCreate, db: Session = Depends(get_db)):
+    existing = None
+
+    if doctor.license_number:
+        existing = (
+            db.query(Doctor)
+            .filter(Doctor.license_number == doctor.license_number)
+            .first()
+        )
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Doctor with this license number already exists"
+        )
+
+    new_doctor = Doctor(
+        name=doctor.name,
+        age=doctor.age,
+        gender=doctor.gender,
+        phone=doctor.phone,
+        email=doctor.email,
+        specialization=doctor.specialization,
+        department=doctor.department,
+        qualification=doctor.qualification,
+        experience=doctor.experience,
+        license_number=doctor.license_number,
+        consultation_fee=doctor.consultation_fee,
+        status=doctor.status,
+    )
+
+    db.add(new_doctor)
+    db.commit()
+    db.refresh(new_doctor)
+
+    return new_doctor
+
+
+@app.get("/admin/doctors", response_model=list[DoctorResponse])
+def get_doctors(db: Session = Depends(get_db)):
+    return (
+        db.query(Doctor)
+        .order_by(Doctor.created_at.desc())
+        .all()
+    )
+
 
 @app.post("/patients/{patient_id}/token")
-async def create_token(patient_id: int, priority: str = "NORMAL", db: Session = Depends(get_db)):
+async def create_token(
+    patient_id: int,
+    priority: str = "NORMAL",
+    doctor_id: int | None = None,
+    db: Session = Depends(get_db)
+):
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -318,6 +372,7 @@ async def create_token(patient_id: int, priority: str = "NORMAL", db: Session = 
         token_number=token_number,
         department=patient.department,
         priority=priority,
+        doctor_id=doctor_id,
         status="WAITING",
     )
     db.add(token)
@@ -330,12 +385,23 @@ async def create_token(patient_id: int, priority: str = "NORMAL", db: Session = 
 
 @app.get("/queue/{department}")
 def get_queue(department: str, db: Session = Depends(get_db)):
-    waiting = department_stats(db, department)
+    if department == "All":
+        waiting = (
+            db.query(Token)
+            .filter(Token.status == "WAITING")
+            .order_by(Token.created_at.asc())
+            .all()
+        )
+    else:
+        waiting = department_stats(db, department)
+
     completed = get_completed_tokens(db, department)
 
     result = []
+
     for i, token in enumerate(waiting):
         patient = db.query(Patient).filter(Patient.id == token.patient_id).first()
+
         result.append({
             "token_number": token.token_number,
             "patient_name": patient.name if patient else "Unknown",
@@ -343,11 +409,14 @@ def get_queue(department: str, db: Session = Depends(get_db)):
             "status": token.status,
             "position": i + 1,
             "estimated_wait": token.estimated_wait or 0,
+            "doctor_id": token.doctor_id,
         })
 
     completed_result = []
+
     for i, token in enumerate(completed):
         patient = db.query(Patient).filter(Patient.id == token.patient_id).first()
+
         completed_result.append({
             "token_number": token.token_number,
             "patient_name": patient.name if patient else "Unknown",
@@ -355,7 +424,10 @@ def get_queue(department: str, db: Session = Depends(get_db)):
             "status": token.status,
             "position": i + 1,
             "estimated_wait": 0,
-            "completed_at": token.completed_at.isoformat() if token.completed_at else None,
+            "completed_at": token.completed_at.isoformat()
+            if token.completed_at
+            else None,
+            "doctor_id": token.doctor_id,
         })
 
     return {
@@ -364,7 +436,6 @@ def get_queue(department: str, db: Session = Depends(get_db)):
         "queue": result,
         "completed": completed_result,
     }
-
 
 @app.get("/tokens/{token_number}")
 def get_token(token_number: str, db: Session = Depends(get_db)):

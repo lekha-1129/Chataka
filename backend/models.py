@@ -33,12 +33,38 @@ class Patient(Base):
     disease = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class Doctor(Base):
+    __tablename__ = "doctors"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    name = Column(String, nullable=False)
+    age = Column(Integer, nullable=True)
+    gender = Column(String, nullable=True)
+
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+
+    specialization = Column(String, nullable=False)
+    department = Column(String, nullable=False)
+
+    qualification = Column(String, nullable=True)
+    experience = Column(Integer, nullable=True)
+
+    license_number = Column(String, nullable=True, unique=True)
+    consultation_fee = Column(Integer, nullable=True)
+
+    status = Column(String, default="ACTIVE")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class Token(Base):
     __tablename__ = "tokens"
 
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(Integer, nullable=False)
+    doctor_id = Column(Integer, nullable=True)
     token_number = Column(String, nullable=False, unique=True)
     department = Column(String, nullable=False)
     priority = Column(String, default="NORMAL")
@@ -47,3 +73,4 @@ class Token(Base):
     called_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     estimated_wait = Column(Integer, default=0)
+    

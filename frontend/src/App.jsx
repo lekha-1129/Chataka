@@ -89,10 +89,8 @@ function Layout({
     admin: [
       "Dashboard",
       "Add Patient",
-      "Patients",
       "Doctors",
       "Queue Management",
-      "Analytics",
       "Settings",
     ],
   };
@@ -881,16 +879,41 @@ function AdminDashboard({ user, onLogout }) {
   const [queue, setQueue] =
     useState([]);
 
+  const [selectedDoctor, setSelectedDoctor] =
+  useState("");
+
+const [selectedPriority, setSelectedPriority] =
+  useState("");
+
   const [message, setMessage] =
     useState("");
 
 
   const [patientList, setPatientList] = useState([]);
+  const [doctorList, setDoctorList] = useState([]);
+
+const [doctorForm, setDoctorForm] = useState({
+    name: "",
+    age: "",
+    gender: "",
+    phone: "",
+    email: "",
+    specialization: "",
+    department: "General Medicine",
+    qualification: "",
+    experience: "",
+    license_number: "",
+    consultation_fee: "",
+    status: "ACTIVE",
+});
+
+const [doctorMsg, setDoctorMsg] = useState("");
+const [doctorError, setDoctorError] = useState("");
   const [addForm, setAddForm] = useState({
     name: "", age: "", dob: "", gender: "",
     phone: "", email: "", address: "",
     emergency_contact: "", blood_group: "",
-    disease: "", department: "General Medicine", priority: "NORMAL",
+    disease: "", department: "General Medicine", doctor_id: "", priority: "NORMAL",
   });
   const [addMsg, setAddMsg] = useState("");
   const [addError, setAddError] = useState("");
@@ -924,27 +947,127 @@ function AdminDashboard({ user, onLogout }) {
           emergency_contact: addForm.emergency_contact.trim() || null,
           blood_group: addForm.blood_group || null,
           disease: addForm.disease.trim() || null,
-          department: addForm.department,
+department: addForm.department,
+doctor_id: addForm.doctor_id
+  ? Number(addForm.doctor_id)
+  : null,
         }),
+      
       });
       const patData = await patRes.json();
       if (!patRes.ok) throw new Error(patData.detail || "Failed to add patient");
 
-      const tokRes = await fetch(
-        `${API}/patients/${patData.id}/token?priority=${addForm.priority}`,
-        { method: "POST" }
-      );
+     const tokRes = await fetch(
+  `${API}/patients/${patData.id}/token?priority=${addForm.priority}&doctor_id=${addForm.doctor_id}`,
+  { method: "POST" }
+);
       const tokData = await tokRes.json();
       if (!tokRes.ok) throw new Error(tokData.detail || "Failed to generate token");
 
       setAddMsg(`Patient added. Token: ${tokData.token_number}`);
-      setAddForm({ name: "", age: "", dob: "", gender: "", phone: "", email: "", address: "", emergency_contact: "", blood_group: "", disease: "", department: "General Medicine", priority: "NORMAL" });
+      setAddForm({
+  name: "",
+  age: "",
+  dob: "",
+  gender: "",
+  phone: "",
+  email: "",
+  address: "",
+  emergency_contact: "",
+  blood_group: "",
+  disease: "",
+  department: "General Medicine",
+  doctor_id: "",
+  priority: "NORMAL",
+});
       await loadPatients();
       await load();
     } catch (err) {
       setAddError(err.message);
     }
   };
+    const loadDoctors = async () => {
+    try {
+      const res = await fetch(`${API}/admin/doctors`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to load doctors");
+      }
+
+      setDoctorList(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+  const submitAddDoctor = async (e) => {
+    e.preventDefault();
+
+    setDoctorMsg("");
+    setDoctorError("");
+
+    try {
+      const res = await fetch(`${API}/doctors`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: doctorForm.name.trim(),
+          age: doctorForm.age ? Number(doctorForm.age) : null,
+          gender: doctorForm.gender || null,
+          phone: doctorForm.phone.trim() || null,
+          email: doctorForm.email.trim() || null,
+          specialization: doctorForm.specialization.trim(),
+          department: doctorForm.department,
+          qualification: doctorForm.qualification.trim() || null,
+          experience: doctorForm.experience
+            ? Number(doctorForm.experience)
+            : null,
+          license_number: doctorForm.license_number.trim() || null,
+          consultation_fee: doctorForm.consultation_fee
+            ? Number(doctorForm.consultation_fee)
+            : null,
+          status: doctorForm.status,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to add doctor");
+      }
+
+      setDoctorMsg(
+        `Doctor ${data.name} added successfully.`
+      );
+
+      setDoctorForm({
+        name: "",
+        age: "",
+        gender: "",
+        phone: "",
+        email: "",
+        specialization: "",
+        department: "General Medicine",
+        qualification: "",
+        experience: "",
+        license_number: "",
+        consultation_fee: "",
+        status: "ACTIVE",
+      });
+
+      await loadDoctors();
+
+    } catch (err) {
+      setDoctorError(err.message);
+    }
+  };
+
+
+ 
 
   const load = async () => {
 
@@ -955,11 +1078,11 @@ function AdminDashboard({ user, onLogout }) {
 
           fetch(`${API}/dashboard`),
 
-          fetch(
-            `${API}/queue/${encodeURIComponent(
-              department
-            )}`
-          ),
+         fetch(
+  `${API}/queue/${encodeURIComponent(
+    department === "ALL" ? "All" : department
+  )}`
+),
 
         ]);
 
@@ -982,6 +1105,7 @@ function AdminDashboard({ user, onLogout }) {
 
     load();
     loadPatients();
+    loadDoctors();
 
     const ws = new WebSocket(
       "ws://127.0.0.1:8000/ws/queue"
@@ -1024,7 +1148,7 @@ function AdminDashboard({ user, onLogout }) {
         title="Add Patient"
         subtitle="Register a new patient and generate a queue token."
       >
-        <div className="dashboard-grid two-columns">
+        <div className="dashboard-grid">
 
           <div className="dash-card">
             <div className="card-label">PATIENT REGISTRATION</div>
@@ -1156,6 +1280,30 @@ function AdminDashboard({ user, onLogout }) {
                     {departments.map((d) => <option key={d}>{d}</option>)}
                   </select>
                 </div>
+
+                <div className="input-group">
+  <label>Doctor *</label>
+  <select
+    required
+    value={addForm.doctor_id}
+    onChange={(e) =>
+      setAddForm({
+        ...addForm,
+        doctor_id: e.target.value,
+      })
+    }
+  >
+    <option value="">Select doctor</option>
+
+    {doctorList
+      .filter((doctor) => doctor.department === addForm.department)
+      .map((doctor) => (
+        <option key={doctor.id} value={doctor.id}>
+          {doctor.name} — {doctor.specialization}
+        </option>
+      ))}
+  </select>
+</div>
 
                 <div className="input-group">
                   <label>Priority *</label>
@@ -1305,43 +1453,396 @@ function AdminDashboard({ user, onLogout }) {
 
   if (active === "Doctors") {
 
-    return (
-      <Layout
-        user={user}
-        onLogout={onLogout}
-        active={active}
-        onNavigate={setActive}
-        title="Doctors"
-        subtitle="Manage hospital doctor accounts."
-      >
+  return (
+    <Layout
+      user={user}
+      onLogout={onLogout}
+      active={active}
+      onNavigate={setActive}
+      title="Doctors"
+      subtitle="Register and manage hospital doctors."
+    >
+
+      <div className="dashboard-grid">
+
+        {/* DOCTOR REGISTRATION */}
 
         <div className="dash-card">
 
           <div className="card-label">
-            DOCTOR MANAGEMENT
+            DOCTOR REGISTRATION
           </div>
 
-          <h3>
-            Doctor accounts
-          </h3>
 
-          <p className="card-muted">
-            Doctor account management requires
-            a backend users endpoint.
-          </p>
+          {doctorMsg && (
+            <div className="dashboard-message">
+              ✓ {doctorMsg}
+            </div>
+          )}
 
-          <div className="empty-dark">
-            Doctors can currently log in
-            using the role-based authentication
-            system.
-          </div>
+          {doctorError && (
+            <div className="auth-error">
+              {doctorError}
+            </div>
+          )}
+
+          <form onSubmit={submitAddDoctor}>
+
+            <div className="add-form-grid">
+
+              <div className="input-group">
+                <label>Full Name *</label>
+                <input
+                  required
+                  placeholder="e.g. Dr. Arun Kumar"
+                  value={doctorForm.name}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      name: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Gender</label>
+                <select
+                  value={doctorForm.gender}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      gender: e.target.value
+                    })
+                  }
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+
+              <div className="input-group">
+                <label>Age</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="120"
+                  placeholder="e.g. 38"
+                  value={doctorForm.age}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      age: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Phone Number</label>
+                <input
+                  placeholder="e.g. +91 98765 43210"
+                  value={doctorForm.phone}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      phone: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. doctor@email.com"
+                  value={doctorForm.email}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      email: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Specialization *</label>
+                <input
+                  required
+                  placeholder="e.g. Cardiology"
+                  value={doctorForm.specialization}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      specialization: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Department *</label>
+                <select
+                  required
+                  value={doctorForm.department}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      department: e.target.value
+                    })
+                  }
+                >
+                  <option value="General Medicine">
+                    General Medicine
+                  </option>
+                  <option value="Cardiology">
+                    Cardiology
+                  </option>
+                  <option value="Neurology">
+                    Neurology
+                  </option>
+                  <option value="Orthopedics">
+                    Orthopedics
+                  </option>
+                  <option value="Pediatrics">
+                    Pediatrics
+                  </option>
+                  <option value="Dermatology">
+                    Dermatology
+                  </option>
+                  <option value="ENT">
+                    ENT
+                  </option>
+                  <option value="Ophthalmology">
+                    Ophthalmology
+                  </option>
+                  <option value="Gynecology">
+                    Gynecology
+                  </option>
+                  <option value="Emergency">
+                    Emergency
+                  </option>
+                </select>
+              </div>
+
+
+              <div className="input-group">
+                <label>Qualification</label>
+                <input
+                  placeholder="e.g. MBBS, MD"
+                  value={doctorForm.qualification}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      qualification: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Experience</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Years of experience"
+                  value={doctorForm.experience}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      experience: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>License Number</label>
+                <input
+                  placeholder="e.g. TN-MED-1001"
+                  value={doctorForm.license_number}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      license_number: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Consultation Fee</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 800"
+                  value={doctorForm.consultation_fee}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      consultation_fee: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+
+              <div className="input-group">
+                <label>Status</label>
+                <select
+                  value={doctorForm.status}
+                  onChange={(e) =>
+                    setDoctorForm({
+                      ...doctorForm,
+                      status: e.target.value
+                    })
+                  }
+                >
+                  <option value="ACTIVE">
+                    Active
+                  </option>
+
+                  <option value="INACTIVE">
+                    Inactive
+                  </option>
+                </select>
+              </div>
+
+            </div>
+
+
+            <button
+              type="submit"
+              className="purple-button"
+              style={{ marginTop: 18 }}
+            >
+              Register Doctor →
+            </button>
+
+          </form>
 
         </div>
 
-      </Layout>
-    );
-  }
 
+        {/* REGISTERED DOCTORS */}
+
+        <div className="dash-card">
+
+          <div className="card-label">
+            REGISTERED DOCTORS
+          </div>
+
+          <h3>
+            Doctor Directory
+          </h3>
+
+          {doctorList.length === 0 ? (
+
+            <div className="empty-dark">
+              No doctors registered yet.
+            </div>
+
+          ) : (
+
+            <div className="dark-table-wrap">
+
+              <table className="dark-table">
+
+                <thead>
+                  <tr>
+                    <th>NAME</th>
+                    <th>SPECIALIZATION</th>
+                    <th>DEPT</th>
+                    <th>QUALIFICATION</th>
+                    <th>EXPERIENCE</th>
+                    <th>PHONE</th>
+                    <th>FEE</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {doctorList.map((doctor) => (
+
+                    <tr key={doctor.id}>
+
+                      <td>
+                        <strong>
+                          {doctor.name}
+                        </strong>
+                      </td>
+
+                      <td>
+                        {doctor.specialization}
+                      </td>
+
+                      <td>
+                        {doctor.department}
+                      </td>
+
+                      <td>
+                        {doctor.qualification || "—"}
+                      </td>
+
+                      <td>
+                        {doctor.experience
+                          ? `${doctor.experience} yrs`
+                          : "—"}
+                      </td>
+
+                      <td>
+                        {doctor.phone || "—"}
+                      </td>
+
+                      <td>
+                        {doctor.consultation_fee
+                          ? `₹${doctor.consultation_fee}`
+                          : "—"}
+                      </td>
+
+                      <td>
+                        <span
+                          className={`dark-badge ${
+                            (doctor.status || "").toLowerCase()
+                          }`}
+                        >
+                          {doctor.status}
+                        </span>
+                      </td>
+
+                    </tr>
+
+                  ))}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          )}
+
+        </div>
+
+      </div>
+
+    </Layout>
+  );
+}
 
   /* ADMIN - QUEUE MANAGEMENT */
 
@@ -1359,36 +1860,112 @@ function AdminDashboard({ user, onLogout }) {
 
         <div className="doctor-toolbar">
 
-          <div>
+  {/* DEPARTMENT */}
+  <div>
+    <div className="card-label">
+      DEPARTMENT
+    </div>
 
-            <div className="card-label">
-              DEPARTMENT
-            </div>
+    <select
+  value={department}
+  onChange={(e) => {
+    setDepartment(e.target.value);
+    setSelectedDoctor("");
+  }}
+>
+  <option value="ALL">
+    All Departments
+  </option>
 
-            <select
-              value={department}
-              onChange={(e) =>
-                setDepartment(e.target.value)
-              }
-            >
+  {departments.map((d) => (
+    <option key={d} value={d}>
+      {d}
+    </option>
+  ))}
+</select>
+  </div>
 
-              {departments.map((d) => (
-                <option key={d}>
-                  {d}
-                </option>
-              ))}
 
-            </select>
+  {/* DOCTOR */}
+  <div>
+    <div className="card-label">
+      DOCTOR
+    </div>
 
-          </div>
+    <select
+      value={selectedDoctor}
+      onChange={(e) =>
+        setSelectedDoctor(e.target.value)
+      }
+    >
+      <option value="">
+        All Doctors
+      </option>
 
-        </div>
+      {doctorList
+  .filter(
+    (doctor) =>
+      department === "ALL" ||
+      doctor.department === department
+  )
+        .map((doctor) => (
+          <option
+            key={doctor.id}
+            value={doctor.id}
+          >
+            {doctor.name}
+          </option>
+        ))}
+    </select>
+  </div>
 
+
+  {/* PRIORITY */}
+  <div>
+    <div className="card-label">
+      PRIORITY
+    </div>
+
+    <select
+      value={selectedPriority}
+      onChange={(e) =>
+        setSelectedPriority(e.target.value)
+      }
+    >
+      <option value="">
+        All Priorities
+      </option>
+
+      <option value="NORMAL">
+        Normal
+      </option>
+
+      <option value="URGENT">
+        Urgent
+      </option>
+
+      <option value="EMERGENCY">
+        Emergency
+      </option>
+    </select>
+  </div>
+
+</div>
 
         <QueueTableDark
-          queue={queue}
-          title={`${department} Queue`}
-        />
+  queue={queue.filter((item) => {
+    const doctorMatch =
+      !selectedDoctor ||
+      String(item.doctor_id) === String(selectedDoctor);
+
+    const priorityMatch =
+      !selectedPriority ||
+      item.priority === selectedPriority;
+
+    return doctorMatch && priorityMatch;
+  })}
+  title={`${department === "ALL" ? "All Departments" : department} Queue`}
+/>
 
       </Layout>
     );
@@ -1504,30 +2081,7 @@ function AdminDashboard({ user, onLogout }) {
         subtitle="Manage your ChatakA admin session."
       >
 
-        <div className="dash-card">
-
-          <div className="card-label">
-            SYSTEM SETTINGS
-          </div>
-
-          <h3>
-            Demo Controls
-          </h3>
-
-          <p className="card-muted">
-            Use this button to clear the
-            current demo queue data.
-          </p>
-
-          <button
-            className="outline-button"
-            onClick={reset}
-          >
-            Reset Demo Queue
-          </button>
-
-        </div>
-
+        
         <div className="dash-card">
 
           <div className="card-label">
@@ -1687,34 +2241,6 @@ function AdminDashboard({ user, onLogout }) {
 
       </div>
 
-
-      <div className="dash-card feature-card">
-
-        <div className="card-label">
-          ChatakA
-        </div>
-
-        <h3>
-          System capabilities
-        </h3>
-
-        <div className="feature-grid">
-
-          <FeatureDark text="AI waiting-time prediction" />
-
-          <FeatureDark text="Real-time WebSocket queue" />
-
-          <FeatureDark text="Emergency priority handling" />
-
-          <FeatureDark text="Role-based dashboards" />
-
-          <FeatureDark text="Digital token management" />
-
-          <FeatureDark text="Hospital operations analytics" />
-
-        </div>
-
-      </div>
 
     </Layout>
   );

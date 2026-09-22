@@ -27,6 +27,7 @@ class PatientCreate(BaseModel):
     emergency_contact: str | None = None
     blood_group: str | None = None
     disease: str | None = None
+    doctor_id: int | None = None
     priority: str = "NORMAL"
     user_id: int | None = None
 
@@ -58,3 +59,46 @@ class TokenResponse(BaseModel):
     estimated_wait: int
     department: str
     patient_name: str
+
+class DoctorCreate(BaseModel):
+    name: str
+    age: int | None = None
+    gender: str | None = None
+
+    phone: str | None = None
+    email: str | None = None
+
+    specialization: str
+    department: str
+
+    qualification: str | None = None
+    experience: int | None = None
+
+    license_number: str | None = None
+    consultation_fee: int | None = None
+
+    status: str = "ACTIVE"
+
+
+class DoctorResponse(BaseModel):
+    id: int
+    name: str
+    age: int | None = None
+    gender: str | None = None
+
+    phone: str | None = None
+    email: str | None = None
+
+    specialization: str
+    department: str
+
+    qualification: str | None = None
+    experience: int | None = None
+
+    license_number: str | None = None
+    consultation_fee: int | None = None
+
+    status: str
+
+    class Config:
+        from_attributes = True
