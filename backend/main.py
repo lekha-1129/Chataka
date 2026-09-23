@@ -12,6 +12,7 @@ from models import User, Patient, Doctor, Token
 from schemas import (
     SignupRequest,
     LoginRequest,
+    PatientLoginRequest,
     PatientCreate,
     PatientResponse,
     DoctorCreate,
@@ -244,6 +245,32 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
     }
 
 
+@app.post("/auth/patient-login")
+def patient_login(data: PatientLoginRequest, db: Session = Depends(get_db)):
+    email = data.email.lower().strip()
+    dob   = data.dob.strip()
+
+    patient = (
+        db.query(Patient)
+        .filter(Patient.email == email, Patient.dob == dob)
+        .order_by(Patient.id.desc())
+        .first()
+    )
+    if not patient:
+        raise HTTPException(status_code=401, detail="Invalid email or date of birth")
+
+    return {
+        "message": "Login successful",
+        "user": {
+            "id":         patient.user_id or patient.id,
+            "patient_id": patient.id,
+            "name":       patient.name,
+            "email":      patient.email,
+            "role":       "patient",
+        },
+    }
+
+
 @app.post("/auth/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     role = normalize_role(data.role)
@@ -450,6 +477,24 @@ def get_latest_patient_token(user_id: int, db: Session = Depends(get_db)):
     patient = db.query(Patient).filter(Patient.user_id == user_id).order_by(Patient.id.desc()).first()
     if not patient:
         return {"token": None}
+
+    token = (
+        db.query(Token)
+        .filter(Token.patient_id == patient.id)
+        .order_by(Token.id.desc())
+        .first()
+    )
+    if not token:
+        return {"token": None, "patient": patient}
+
+    return {"token": token_payload(db, token), "patient": patient}
+
+
+@app.get("/patient/by-patient-id/{patient_id}")
+def get_token_by_patient_id(patient_id: int, db: Session = Depends(get_db)):
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        return {"token": None, "patient": None}
 
     token = (
         db.query(Token)

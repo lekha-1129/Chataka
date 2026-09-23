@@ -228,9 +228,11 @@ function PatientDashboard({ user, onLogout }) {
 
     try {
 
-      const res = await fetch(
-        `${API}/patient/token/${user.id}`
-      );
+      const url = user.patient_id
+        ? `${API}/patient/by-patient-id/${user.patient_id}`
+        : `${API}/patient/token/${user.id}`;
+
+      const res = await fetch(url);
 
       const data = await res.json();
 
@@ -311,7 +313,7 @@ function PatientDashboard({ user, onLogout }) {
 
     try {
 
-      let patientId = patient?.id;
+      let patientId = patient?.id || user.patient_id;
 
       if (!patientId) {
 
@@ -1153,6 +1155,7 @@ doctor_id: addForm.doctor_id
           <div className="dash-card">
             <div className="card-label">PATIENT REGISTRATION</div>
             <h3>New Patient</h3>
+            <p className="form-login-hint">⚠ Email and Date of Birth are required — patients use these to log in.</p>
 
             {addMsg && <div className="dashboard-message">✓ {addMsg}</div>}
             {addError && <div className="auth-error">{addError}</div>}
@@ -1197,9 +1200,10 @@ doctor_id: addForm.doctor_id
                 </div>
 
                 <div className="input-group">
-                  <label>Date of Birth</label>
+                  <label>Date of Birth *</label>
                   <input
                     type="date"
+                    required
                     value={addForm.dob}
                     onChange={(e) => setAddForm({ ...addForm, dob: e.target.value })}
                   />
@@ -1216,9 +1220,10 @@ doctor_id: addForm.doctor_id
                 </div>
 
                 <div className="input-group">
-                  <label>Email Address</label>
+                  <label>Email Address *</label>
                   <input
                     type="email"
+                    required
                     placeholder="e.g. patient@email.com"
                     value={addForm.email}
                     onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
@@ -2291,12 +2296,26 @@ function ProfileCard({ user, patient }) {
         )}
 
         {patient && (
-          <div>
-            <span>Department</span>
-            <strong>
-              {patient.department}
-            </strong>
-          </div>
+          <>
+            {patient.department && (
+              <div>
+                <span>Department</span>
+                <strong>{patient.department}</strong>
+              </div>
+            )}
+            {patient.dob && (
+              <div>
+                <span>Date of Birth</span>
+                <strong>{patient.dob}</strong>
+              </div>
+            )}
+            {patient.blood_group && (
+              <div>
+                <span>Blood Group</span>
+                <strong>{patient.blood_group}</strong>
+              </div>
+            )}
+          </>
         )}
 
       </div>

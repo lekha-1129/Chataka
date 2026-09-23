@@ -15,6 +15,11 @@ class LoginRequest(BaseModel):
     role: str
 
 
+class PatientLoginRequest(BaseModel):
+    email: EmailStr
+    dob: str
+
+
 class PatientCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     age: int | None = None
