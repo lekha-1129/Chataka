@@ -40,6 +40,12 @@ for col, col_type in new_columns.items():
         with engine.begin() as connection:
             connection.execute(text(f"ALTER TABLE patients ADD COLUMN {col} {col_type}"))
 
+# Ensure older SQLite databases include the doctor assignment column on tokens.
+token_columns = {column["name"] for column in inspector.get_columns("tokens")}
+if "doctor_id" not in token_columns:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE tokens ADD COLUMN doctor_id INTEGER"))
+
 get_model()
 
 app = FastAPI(
@@ -85,6 +91,102 @@ manager = ConnectionManager()
 
 def priority_rank(priority: str) -> int:
     return {"EMERGENCY": 0, "URGENT": 1, "NORMAL": 2}.get(priority, 2)
+
+
+def get_active_doctors(db: Session, department: str):
+    return (
+        db.query(Doctor)
+        .filter(Doctor.department == department)
+        .filter(Doctor.status != "INACTIVE")
+        .order_by(Doctor.experience.desc(), Doctor.id.asc())
+        .all()
+    )
+
+
+def get_doctor_queue_load(db: Session, doctor_id: int):
+    return (
+        db.query(Token)
+        .filter(Token.doctor_id == doctor_id)
+        .filter(Token.status.in_(["WAITING", "CALLED"]))
+        .count()
+    )
+
+
+def get_doctor_avg_consultation_minutes(db: Session, doctor_id: int) -> float:
+    tokens = (
+        db.query(Token)
+        .filter(Token.doctor_id == doctor_id)
+        .filter(Token.status == "COMPLETED")
+        .filter(Token.completed_at.isnot(None))
+        .all()
+    )
+
+    durations = []
+    for token in tokens:
+        if token.called_at and token.completed_at:
+            minutes = (token.completed_at - token.called_at).total_seconds() / 60
+        elif token.created_at and token.completed_at:
+            minutes = (token.completed_at - token.created_at).total_seconds() / 60
+        else:
+            continue
+
+        if minutes > 0:
+            durations.append(minutes)
+
+    if not durations:
+        return 12.0
+    return sum(durations) / len(durations)
+
+
+def get_doctor_expected_wait_minutes(db: Session, doctor_id: int, priority: str = "NORMAL") -> float:
+    queue_load = get_doctor_queue_load(db, doctor_id)
+    avg_speed = get_doctor_avg_consultation_minutes(db, doctor_id)
+
+    age_total = 0.0
+    active_tokens = (
+        db.query(Token)
+        .filter(Token.doctor_id == doctor_id)
+        .filter(Token.status.in_(["WAITING", "CALLED"]))
+        .all()
+    )
+    for token in active_tokens:
+        if token.created_at:
+            age_minutes = (datetime.utcnow() - token.created_at).total_seconds() / 60
+            age_total += max(0.0, age_minutes)
+
+    priority_weight = {"NORMAL": 1.0, "URGENT": 0.75, "EMERGENCY": 0.55}.get(priority.upper(), 1.0)
+    return (queue_load * avg_speed) + (age_total * 0.2) + (15 * (1 - priority_weight))
+
+
+def allocate_doctor_for_patient(db: Session, patient: Patient, priority: str = "NORMAL") -> Doctor | None:
+    doctors = get_active_doctors(db, patient.department)
+    if not doctors:
+        return None
+
+    def doctor_score(doctor: Doctor):
+        queue_load = get_doctor_queue_load(db, doctor.id)
+        avg_speed = get_doctor_avg_consultation_minutes(db, doctor.id)
+        expected_wait = get_doctor_expected_wait_minutes(db, doctor.id, priority)
+        specialty_penalty = 0
+
+        if patient.disease and doctor.specialization:
+            disease_text = patient.disease.lower()
+            specialization_text = doctor.specialization.lower()
+            if specialization_text not in disease_text and disease_text not in specialization_text:
+                specialty_penalty = 1
+
+        priority_weight = {"NORMAL": 1, "URGENT": 0.7, "EMERGENCY": 0.5}.get(priority.upper(), 1)
+        availability_penalty = 0 if queue_load == 0 else queue_load
+
+        return (
+            expected_wait + (availability_penalty * avg_speed * 0.6) + (specialty_penalty * 20),
+            queue_load,
+            avg_speed,
+            priority_weight,
+            doctor.id,
+        )
+
+    return min(doctors, key=doctor_score)
 
 
 def get_waiting_tokens(db: Session, department: str):
@@ -384,6 +486,15 @@ async def create_token(
     if priority not in {"NORMAL", "URGENT", "EMERGENCY"}:
         raise HTTPException(status_code=400, detail="Priority must be NORMAL, URGENT or EMERGENCY")
 
+    if doctor_id is not None:
+        assigned_doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+        if assigned_doctor is None:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        if assigned_doctor.department != patient.department:
+            raise HTTPException(status_code=400, detail="Selected doctor does not match patient department")
+    else:
+        assigned_doctor = allocate_doctor_for_patient(db, patient, priority)
+
     prefix = {
         "General Medicine": "GM",
         "Cardiology": "CA",
@@ -399,7 +510,11 @@ async def create_token(
         token_number=token_number,
         department=patient.department,
         priority=priority,
+<<<<<<< HEAD
         doctor_id=doctor_id,
+=======
+        doctor_id=assigned_doctor.id if assigned_doctor else None,
+>>>>>>> 5b8efdd (Update Chataka project)
         status="WAITING",
     )
     db.add(token)

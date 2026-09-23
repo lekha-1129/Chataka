@@ -949,22 +949,46 @@ const [doctorError, setDoctorError] = useState("");
           emergency_contact: addForm.emergency_contact.trim() || null,
           blood_group: addForm.blood_group || null,
           disease: addForm.disease.trim() || null,
+<<<<<<< HEAD
 department: addForm.department,
 doctor_id: addForm.doctor_id
   ? Number(addForm.doctor_id)
   : null,
+=======
+          department: addForm.department,
+          doctor_id: addForm.doctor_id ? Number(addForm.doctor_id) : null,
+>>>>>>> 5b8efdd (Update Chataka project)
         }),
       
       });
-      const patData = await patRes.json();
-      if (!patRes.ok) throw new Error(patData.detail || "Failed to add patient");
 
+      const patData = await patRes.json().catch(() => ({}));
+      if (!patRes.ok) {
+        throw new Error(patData.detail || "Failed to add patient");
+      }
+
+      const params = new URLSearchParams({ priority: addForm.priority });
+      if (addForm.doctor_id) {
+        params.set("doctor_id", addForm.doctor_id);
+      }
+
+<<<<<<< HEAD
      const tokRes = await fetch(
   `${API}/patients/${patData.id}/token?priority=${addForm.priority}&doctor_id=${addForm.doctor_id}`,
   { method: "POST" }
 );
       const tokData = await tokRes.json();
       if (!tokRes.ok) throw new Error(tokData.detail || "Failed to generate token");
+=======
+      const tokRes = await fetch(
+        `${API}/patients/${patData.id}/token?${params.toString()}`,
+        { method: "POST" }
+      );
+      const tokData = await tokRes.json().catch(() => ({}));
+      if (!tokRes.ok) {
+        throw new Error(tokData.detail || "Failed to generate token");
+      }
+>>>>>>> 5b8efdd (Update Chataka project)
 
       setAddMsg(`Patient added. Token: ${tokData.token_number}`);
       setAddForm({
@@ -985,7 +1009,11 @@ doctor_id: addForm.doctor_id
       await loadPatients();
       await load();
     } catch (err) {
-      setAddError(err.message);
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to connect to the backend server. Please ensure the API is running.";
+      setAddError(message);
     }
   };
     const loadDoctors = async () => {
@@ -1287,9 +1315,14 @@ doctor_id: addForm.doctor_id
                 </div>
 
                 <div className="input-group">
+<<<<<<< HEAD
   <label>Doctor *</label>
   <select
     required
+=======
+  <label>Doctor</label>
+  <select
+>>>>>>> 5b8efdd (Update Chataka project)
     value={addForm.doctor_id}
     onChange={(e) =>
       setAddForm({
@@ -1298,7 +1331,11 @@ doctor_id: addForm.doctor_id
       })
     }
   >
+<<<<<<< HEAD
     <option value="">Select doctor</option>
+=======
+    <option value="">AI auto-assign to least-loaded doctor</option>
+>>>>>>> 5b8efdd (Update Chataka project)
 
     {doctorList
       .filter((doctor) => doctor.department === addForm.department)
@@ -1317,7 +1354,6 @@ doctor_id: addForm.doctor_id
                     onChange={(e) => setAddForm({ ...addForm, priority: e.target.value })}
                   >
                     <option value="NORMAL">Normal</option>
-                    <option value="URGENT">Urgent</option>
                     <option value="EMERGENCY">Emergency</option>
                   </select>
                 </div>
