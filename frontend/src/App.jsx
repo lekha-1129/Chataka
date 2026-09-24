@@ -949,17 +949,9 @@ const [doctorError, setDoctorError] = useState("");
           emergency_contact: addForm.emergency_contact.trim() || null,
           blood_group: addForm.blood_group || null,
           disease: addForm.disease.trim() || null,
-<<<<<<< HEAD
-department: addForm.department,
-doctor_id: addForm.doctor_id
-  ? Number(addForm.doctor_id)
-  : null,
-=======
           department: addForm.department,
           doctor_id: addForm.doctor_id ? Number(addForm.doctor_id) : null,
->>>>>>> 5b8efdd (Update Chataka project)
         }),
-      
       });
 
       const patData = await patRes.json().catch(() => ({}));
@@ -972,14 +964,6 @@ doctor_id: addForm.doctor_id
         params.set("doctor_id", addForm.doctor_id);
       }
 
-<<<<<<< HEAD
-     const tokRes = await fetch(
-  `${API}/patients/${patData.id}/token?priority=${addForm.priority}&doctor_id=${addForm.doctor_id}`,
-  { method: "POST" }
-);
-      const tokData = await tokRes.json();
-      if (!tokRes.ok) throw new Error(tokData.detail || "Failed to generate token");
-=======
       const tokRes = await fetch(
         `${API}/patients/${patData.id}/token?${params.toString()}`,
         { method: "POST" }
@@ -988,7 +972,6 @@ doctor_id: addForm.doctor_id
       if (!tokRes.ok) {
         throw new Error(tokData.detail || "Failed to generate token");
       }
->>>>>>> 5b8efdd (Update Chataka project)
 
       setAddMsg(`Patient added. Token: ${tokData.token_number}`);
       setAddForm({
@@ -1315,37 +1298,27 @@ doctor_id: addForm.doctor_id
                 </div>
 
                 <div className="input-group">
-<<<<<<< HEAD
-  <label>Doctor *</label>
-  <select
-    required
-=======
-  <label>Doctor</label>
-  <select
->>>>>>> 5b8efdd (Update Chataka project)
-    value={addForm.doctor_id}
-    onChange={(e) =>
-      setAddForm({
-        ...addForm,
-        doctor_id: e.target.value,
-      })
-    }
-  >
-<<<<<<< HEAD
-    <option value="">Select doctor</option>
-=======
-    <option value="">AI auto-assign to least-loaded doctor</option>
->>>>>>> 5b8efdd (Update Chataka project)
+                  <label>Doctor</label>
+                  <select
+                    value={addForm.doctor_id}
+                    onChange={(e) =>
+                      setAddForm({
+                        ...addForm,
+                        doctor_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">AI auto-assign to least-loaded doctor</option>
 
-    {doctorList
-      .filter((doctor) => doctor.department === addForm.department)
-      .map((doctor) => (
-        <option key={doctor.id} value={doctor.id}>
-          {doctor.name} — {doctor.specialization}
-        </option>
-      ))}
-  </select>
-</div>
+                    {doctorList
+                      .filter((doctor) => doctor.department === addForm.department)
+                      .map((doctor) => (
+                        <option key={doctor.id} value={doctor.id}>
+                          {doctor.name} — {doctor.specialization}
+                        </option>
+                      ))}
+                  </select>
+                </div>
 
                 <div className="input-group">
                   <label>Priority *</label>
